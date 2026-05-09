@@ -4,6 +4,8 @@
 #include <driver/i2s.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/ringbuf.h>
+#include <Preferences.h>
+#include <WebServer.h>
 
 // --- PIN DEFINITIONS ---
 #define PIN_LED           4
@@ -31,12 +33,67 @@ bool is_buffering = true;
 unsigned long last_led_blink = 0;
 bool led_state = false;
 
+// --- PAIRING & SETUP STATE ---
+enum SystemState {
+    STATE_SETUP_AP,
+    STATE_PAIRING,
+    STATE_AUDIO_RX
+};
+SystemState current_state = STATE_AUDIO_RX;
+
+Preferences preferences;
+WebServer server(80);
+uint8_t master_mac[6] = {0};
+bool has_master_mac = false;
+unsigned long pairing_start_time = 0;
+
+// --- HTML FOR CAPTIVE PORTAL ---
+const char* setup_html = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #222; color: #fff; }
+    button { padding: 20px 40px; font-size: 24px; background-color: #007BFF; color: white; border: none; border-radius: 10px; cursor: pointer; }
+    button:active { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+  <h2>Insane Sound Bar - Subwoofer Setup</h2>
+  <form action="/pair" method="POST">
+    <button type="submit">Mit Soundbar koppeln</button>
+  </form>
+</body>
+</html>
+)rawliteral";
+
+// --- WEBSERVER HANDLERS ---
+void handleRoot() {
+    server.send(200, "text/html", setup_html);
+}
+
+void handlePair() {
+    server.send(200, "text/html", "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'><style>body{background:#222;color:#fff;text-align:center;font-family:sans-serif;margin-top:50px;}</style></head><body><h2>Pairing gestartet!</h2><p>Bitte warten...</p></body></html>");
+    // State change is handled in main loop by setting flag or changing state directly
+    current_state = STATE_PAIRING;
+    pairing_start_time = millis();
+}
+
 // --- ESP-NOW CALLBACK ---
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
-    if (data_len > 0) {
-        last_packet_time = millis();
-        // Send data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
-        xRingbufferSend(audio_buffer, (void *)data, data_len, 0);
+    if (current_state == STATE_AUDIO_RX) {
+        if (data_len > 0) {
+            last_packet_time = millis();
+            // Send data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
+            xRingbufferSend(audio_buffer, (void *)data, data_len, 0);
+        }
+    } else if (current_state == STATE_PAIRING) {
+        // Look for pairing ACK from master (assuming length 1 byte == 0xAA for simplicity)
+        if (data_len == 1 && data[0] == 0xAA) {
+            memcpy(master_mac, mac_addr, 6);
+            has_master_mac = true;
+        }
     }
 }
 
@@ -91,20 +148,121 @@ void setup() {
     // Bring them out of shutdown, but keep mute active via MUTE_CTRL
     digitalWrite(PIN_XSMT_SDZ_CTRL, HIGH);
 
-    // 4. Setup ESP-NOW
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-
-    if (esp_now_init() != ESP_OK) {
-        // ESP-NOW init failed
-        return;
+    // 4. Check NVS for existing Master MAC
+    preferences.begin("isb", false);
+    size_t mac_len = preferences.getBytesLength("master_mac");
+    if (mac_len == 6) {
+        preferences.getBytes("master_mac", master_mac, 6);
+        has_master_mac = true;
+        current_state = STATE_AUDIO_RX;
+    } else {
+        current_state = STATE_SETUP_AP;
     }
+    preferences.end();
 
-    esp_now_register_recv_cb(onDataRecv);
+    // 5. Setup Network & ESP-NOW based on state
+    if (current_state == STATE_AUDIO_RX) {
+        WiFi.mode(WIFI_STA);
+        WiFi.disconnect();
+
+        if (esp_now_init() != ESP_OK) {
+            return;
+        }
+
+        esp_now_register_recv_cb(onDataRecv);
+
+        // Add master to peer list (to receive correctly, and in case we need to send)
+        esp_now_peer_info_t peerInfo = {};
+        memcpy(peerInfo.peer_addr, master_mac, 6);
+        peerInfo.channel = 0; // use current channel
+        peerInfo.encrypt = false;
+        esp_now_add_peer(&peerInfo);
+
+    } else if (current_state == STATE_SETUP_AP) {
+        WiFi.mode(WIFI_AP);
+        WiFi.softAP("Insane_Subwoofer");
+
+        IPAddress IP = WiFi.softAPIP();
+
+        server.on("/", HTTP_GET, handleRoot);
+        server.on("/pair", HTTP_POST, handlePair);
+        server.begin();
+    }
 }
 
 void loop() {
     uint32_t now = millis();
+
+    if (current_state == STATE_SETUP_AP) {
+        server.handleClient();
+
+        // Slow pulse for AP mode
+        if (now - last_led_blink >= 1000) {
+            led_state = !led_state;
+            digitalWrite(PIN_LED, led_state ? HIGH : LOW);
+            last_led_blink = now;
+        }
+        return; // Don't run audio logic in setup mode
+    }
+
+    if (current_state == STATE_PAIRING) {
+        static bool pairing_inited = false;
+        static uint32_t last_pair_tx = 0;
+
+        if (!pairing_inited) {
+            server.stop();
+            WiFi.mode(WIFI_STA);
+            WiFi.disconnect();
+            if (esp_now_init() == ESP_OK) {
+                esp_now_register_recv_cb(onDataRecv);
+
+                // Add broadcast peer
+                esp_now_peer_info_t peerInfo = {};
+                for (int i=0; i<6; i++) peerInfo.peer_addr[i] = 0xFF;
+                peerInfo.channel = 0;
+                peerInfo.encrypt = false;
+                esp_now_add_peer(&peerInfo);
+            }
+            pairing_inited = true;
+        }
+
+        // Fast blink for pairing
+        if (now - last_led_blink >= 100) {
+            led_state = !led_state;
+            digitalWrite(PIN_LED, led_state ? HIGH : LOW);
+            last_led_blink = now;
+        }
+
+        // Send Broadcast every 500ms
+        if (now - last_pair_tx >= 500) {
+            uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+            uint8_t pair_req = 0xBB; // Pairing request payload
+            esp_now_send(broadcast_mac, &pair_req, 1);
+            last_pair_tx = now;
+        }
+
+        if (has_master_mac) {
+            // Save to NVS
+            preferences.begin("isb", false);
+            preferences.putBytes("master_mac", master_mac, 6);
+            preferences.end();
+
+            // Add actual master peer
+            esp_now_peer_info_t peerInfo = {};
+            memcpy(peerInfo.peer_addr, master_mac, 6);
+            peerInfo.channel = 0;
+            peerInfo.encrypt = false;
+            esp_now_add_peer(&peerInfo);
+
+            digitalWrite(PIN_LED, HIGH);
+            current_state = STATE_AUDIO_RX;
+        } else if (now - pairing_start_time > 60000) {
+            // Timeout after 60 seconds, reboot to go back to AP
+            ESP.restart();
+        }
+
+        return; // Don't run audio logic in pairing mode
+    }
 
     // -- 1. Stream Status Logic --
     // Check if stream is alive (>100ms means stream interrupted)
@@ -123,11 +281,12 @@ void loop() {
         if (!is_muted) {
             is_muted = true;
             digitalWrite(PIN_MUTE_CTRL, LOW); // Mute
+            digitalWrite(PIN_XSMT_SDZ_CTRL, LOW); // Shut down DAC/TPA totally to avoid any noise on long drops
         }
         // Force back into buffering state so we accumulate data when stream restarts
         is_buffering = true;
 
-        // Optionally drain the buffer entirely when stream is lost
+        // ZWINGEND (Mandatory): drain the buffer entirely when stream is lost to prevent old artifacts
         size_t size;
         void *drain = xRingbufferReceive(audio_buffer, &size, 0);
         while(drain != NULL) {
@@ -141,6 +300,8 @@ void loop() {
                 is_buffering = false; // Buffer filled enough, start playing
                 if (is_muted) {
                     is_muted = false;
+                    digitalWrite(PIN_XSMT_SDZ_CTRL, HIGH); // Enable DAC/TPA
+                    delay(1); // Give it a tiny bit of time before unmuting
                     digitalWrite(PIN_MUTE_CTRL, HIGH); // Unmute
                 }
             }
