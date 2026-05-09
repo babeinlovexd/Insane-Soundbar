@@ -29,6 +29,10 @@
 
 #define SAMPLE_RATE 11025
 
+#define FW_VERSION_MAJOR 1
+#define FW_VERSION_MINOR 0
+#define FW_VERSION_PATCH 0
+
 static const char *TAG = "SUB_TX";
 
 static volatile uint8_t reg_sub_state = 0;
@@ -223,6 +227,21 @@ static void i2c_slave_task(void *arg) {
                 }
                 else if (current_reg == 0x04) {
                     vals[0] = reg_pair_cmd;
+                    tx_len = 1;
+                }
+                else if (current_reg == 0xF0) {
+                    vals[0] = FW_VERSION_MAJOR;
+                    vals[1] = FW_VERSION_MINOR;
+                    vals[2] = FW_VERSION_PATCH;
+                    tx_len = 3;
+                }
+                else if (current_reg == 0xF1) {
+                    vals[0] = FW_VERSION_MINOR;
+                    vals[1] = FW_VERSION_PATCH;
+                    tx_len = 2;
+                }
+                else if (current_reg == 0xF2) {
+                    vals[0] = FW_VERSION_PATCH;
                     tx_len = 1;
                 }
 

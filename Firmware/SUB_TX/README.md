@@ -17,6 +17,10 @@ Das Modul verarbeitet folgende Register im Hintergrund für den ESP32-S3:
 * `0x01` (**SUB_STATE** - Read Only): 0 = Subwoofer getrennt, 1 = Subwoofer verbunden.
 * `0x02` (**SUB_RSSI** - Read Only): 0-255 (Aktuelle Signalstärke der ESP-NOW Verbindung).
 * `0x03` (**BUF_DELAY** - Read/Write): 0-255 ms. (Latenzausgleich, wird via ESP-NOW Metadaten an den Subwoofer gesendet).
+* `0x04` (**PAIR_CMD** - Read/Write): 0 = Normal, 1 = Pairing-Modus aktivieren (wartet max. 60s auf Broadcast vom Subwoofer).
+* `0xF0` (**FW_VERSION_MAJOR** - Read Only): Major Version der Firmware.
+* `0xF1` (**FW_VERSION_MINOR** - Read Only): Minor Version der Firmware.
+* `0xF2` (**FW_VERSION_PATCH** - Read Only): Patch Version der Firmware.
 
 ## Funktionsweise
 
