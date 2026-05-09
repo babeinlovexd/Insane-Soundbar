@@ -4,7 +4,8 @@ Dieses Modul (ESP32-WROOM-32U) befindet sich im aktiven Subwoofer der *Insane So
 
 ## Hauptfunktionen
 
-- **ESP-NOW Audio Empfang:** Empfängt einen Mono-Audiostream (16 kHz, 16-Bit) in Paketen (max. 250 Bytes) von der Master-Soundbar. Es werden kein WLAN oder Bluetooth verwendet.
+- **ESP-NOW Audio Empfang:** Empfängt einen Mono-Audiostream (16 kHz, 16-Bit) in Paketen (max. 250 Bytes) von der Master-Soundbar im reinen ESP-NOW Modus.
+- **Access Point & NVS-Pairing:** Besitzt der Subwoofer noch keine Master-MAC-Adresse, startet er einen temporären WLAN Access Point ("Insane_Subwoofer") und ein Web-Interface (`192.168.4.1`). Über einen Button im Browser wird das Pairing initiiert. Die MAC wird dauerhaft im NVS gespeichert.
 - **Jitter-Buffer:** Um Störgeräusche durch Paketverluste oder -verzögerungen zu verhindern, puffert ein FreeRTOS-Ring-Buffer eingehende Audiodaten (ca. 50 ms).
 - **I2S Stereo Mirroring:** Das empfangene Mono-Signal wird im Buffer für den I2S-DMA verdoppelt (auf den linken und rechten Kanal gespiegelt), um beide Eingänge des TPA3116-Verstärkers anzusteuern.
 - **Hardware-Mute & Anti-Pop:**
@@ -12,7 +13,9 @@ Dieses Modul (ESP32-WROOM-32U) befindet sich im aktiven Subwoofer der *Insane So
   - Das Signal wird erst auf HIGH (Unmute) gesetzt, wenn der Jitter-Buffer mindestens zur Hälfte gefüllt ist und der Datenstrom kontinuierlich empfangen wird.
   - Bei einem Abbruch des Streams (Latenz > 100 ms) wird der Pin umgehend wieder auf LOW gezogen, um unerwünschtes Knacken oder Rauschen ("Pop"-Geräusche) zu blockieren.
 - **Status-LED (Pin 4):**
-  - **Blinkend (500 ms Intervall):** Warte auf Verbindung oder Jitter-Buffer füllt sich.
+  - **Pulsierend (1 Sekunde Intervall):** Im AP-Setup Modus, wartet auf User über Webinterface.
+  - **Schnell blinkend (100 ms Intervall):** Im Pairing-Modus, sucht die Soundbar.
+  - **Blinkend (500 ms Intervall):** Warte auf Audio Stream oder Jitter-Buffer füllt sich.
   - **Dauerlicht:** ESP-NOW Stream ist aktiv und gesund (Audio wird wiedergegeben).
 
 ## Kompilieren
