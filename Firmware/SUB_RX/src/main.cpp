@@ -41,6 +41,11 @@ enum SystemState {
 };
 SystemState current_state = STATE_AUDIO_RX;
 
+// --- PAIRING PROTOCOL ---
+typedef struct {
+    uint8_t type; // 1 = Request, 2 = ACK
+} __attribute__((packed)) pairing_packet_t;
+
 Preferences preferences;
 WebServer server(80);
 uint8_t master_mac[6] = {0};
@@ -89,10 +94,13 @@ void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
             xRingbufferSend(audio_buffer, (void *)data, data_len, 0);
         }
     } else if (current_state == STATE_PAIRING) {
-        // Look for pairing ACK from master (assuming length 1 byte == 0xAA for simplicity)
-        if (data_len == 1 && data[0] == 0xAA) {
-            memcpy(master_mac, mac_addr, 6);
-            has_master_mac = true;
+        // Look for pairing ACK from master
+        if (data_len == sizeof(pairing_packet_t)) {
+            pairing_packet_t *packet = (pairing_packet_t *)data;
+            if (packet->type == 2) {
+                memcpy(master_mac, mac_addr, 6);
+                has_master_mac = true;
+            }
         }
     }
 }
@@ -236,8 +244,9 @@ void loop() {
         // Send Broadcast every 500ms
         if (now - last_pair_tx >= 500) {
             uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-            uint8_t pair_req = 0xBB; // Pairing request payload
-            esp_now_send(broadcast_mac, &pair_req, 1);
+            pairing_packet_t pair_req;
+            pair_req.type = 1; // 1 = Request
+            esp_now_send(broadcast_mac, (uint8_t*)&pair_req, sizeof(pairing_packet_t));
             last_pair_tx = now;
         }
 
