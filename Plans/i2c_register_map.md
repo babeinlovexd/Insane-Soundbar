@@ -63,8 +63,8 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 
 ---
 
-## 5. Firmware Versioning (Global für alle ESP32 Slaves)
-*Einheitliches Schema für BT-RX & SUB-TX*
+## 5. Universal System Registers (Für ALLE I2C Slaves: 0x20, 0x21, 0x22)
+*Diese Register liegen am Ende der Map und sind bei jedem Chip identisch belegt, um das Auslesen durch das Flasher-Tool zu standardisieren.*
 
 | Reg | Name | R/W | Werte | Funktion |
 | :--- | :--- | :--- | :--- | :--- |
