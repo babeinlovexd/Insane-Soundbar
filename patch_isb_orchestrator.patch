@@ -1,0 +1,13 @@
+--- Firmware/Master/components/isb_orchestrator/isb_orchestrator.h
++++ Firmware/Master/components/isb_orchestrator/isb_orchestrator.h
+@@ -148,6 +148,10 @@
+     ESP_LOGD("ISB_ORCH", "Sent MUTE=%d to DSP", mute);
+   }
+
++  void set_mute(bool mute) {
++    set_dsp_mute(mute);
++  }
++
+   void set_dsp_volume(uint8_t vol_linear) {
+     uint8_t vol_log = (vol_linear * vol_linear) / 100;
+     current_volume = vol_log;
