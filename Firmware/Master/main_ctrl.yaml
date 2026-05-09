@@ -56,6 +56,51 @@ i2c:
     scl: GPIO9
     scan: true
 
+i2s_audio:
+  - id: i2s_bus_out
+    i2s_bclk_pin: GPIO15
+    i2s_lrclk_pin: GPIO16
+
+speaker:
+  - platform: i2s_audio
+    id: isb_i2s_speaker
+    dac_type: external
+    i2s_audio_id: i2s_bus_out
+    i2s_dout_pin: GPIO17
+    channel: stereo
+    use_apll: false
+    i2s_comm_fmt: stand_i2s
+
+  - platform: mixer
+    id: isb_mixer
+    output_speaker: isb_i2s_speaker
+    queue_mode: true
+    source_speakers:
+      - id: media_spk_mixer_input
+      - id: announcement_spk_mixer_input
+
+media_player:
+  - platform: speaker
+    name: "Insane Sound Bar"
+    id: isb_media_player
+    codec_support_enabled: all
+    media_pipeline:
+      speaker: media_spk_mixer_input
+      format: FLAC
+      num_channels: 2
+    announcement_pipeline:
+      speaker: announcement_spk_mixer_input
+      format: FLAC
+      num_channels: 2
+    # Status-Sync mit dem RP2354 DSP (Reg 0x02)
+    on_play:
+      - lambda: 'id(isb_orchestrator_inst).set_mute(false);'
+    on_pause:
+      - lambda: 'id(isb_orchestrator_inst).set_mute(true);'
+    on_idle:
+      - lambda: 'id(isb_orchestrator_inst).set_mute(true);'
+
+
 # UARTs for Stream Server (Flash-Hub)
 uart:
   - id: uart_dsp
@@ -186,6 +231,18 @@ select:
     initial_option: "None"
     optimistic: true
 
+  - platform: template
+    name: "Input Source"
+    id: input_source
+    options:
+      - "Toslink"
+      - "Aux"
+      - "Bluetooth"
+      - "WLAN"
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_input(x);'
+
+
 button:
   - platform: template
     name: "Start IR Learn"
@@ -196,3 +253,20 @@ button:
           } else {
             ESP_LOGW("ISB_ORCH", "Select a target first!");
           }
+
+  - platform: template
+    name: "Pair Subwoofer"
+    icon: "mdi:speaker-wireless"
+    on_press:
+      - lambda: 'id(isb_orchestrator_inst).pair_subwoofer();'
+
+
+number:
+  - platform: template
+    name: "Master Volume"
+    id: master_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_volume(x);'

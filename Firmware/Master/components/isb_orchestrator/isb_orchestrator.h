@@ -148,6 +148,24 @@ class ISBOrchestrator : public Component {
     ESP_LOGD("ISB_ORCH", "Sent VOL=%d (linear %d) to DSP", vol_log, vol_linear);
   }
 
+  void set_mute(bool mute) {
+    set_dsp_mute(mute);
+  }
+
+  void set_volume(float vol_linear) {
+    set_dsp_volume((uint8_t)vol_linear);
+  }
+
+  void set_input(std::string input) {
+    ESP_LOGI("ISB_ORCH", "Input source set to: %s", input.c_str());
+  }
+
+  void pair_subwoofer() {
+    uint8_t data[2] = {0x04, 0x01}; // Write 0x01 to reg 0x04
+    i2c_bus_->write(SUB_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Subwoofer pairing triggered");
+  }
+
   void handle_ir_code(uint32_t code) {
     if (learn_mode_active) {
       ESP_LOGI("ISB_ORCH", "Learned code %08X for target %s", code, learn_target.c_str());
