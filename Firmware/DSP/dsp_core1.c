@@ -107,10 +107,15 @@ void dsp_core1_entry() {
             float fl = (float)in_l;
             float fr = (float)in_r;
 
-            // Apply Master Volume (0-100)
-            float vol = g_dsp_state.vol_master / 100.0f;
-            fl *= vol;
-            fr *= vol;
+            // Apply Master Volume (Logarithmic / Audio Taper)
+            // Mappt 0-100 auf -50dB bis 0dB (0 = Stumm)
+            float vol_multiplier = 0.0f;
+            if (g_dsp_state.vol_master > 0) {
+                float vol_db = (g_dsp_state.vol_master - 100.0f) / 2.0f;
+                vol_multiplier = powf(10.0f, vol_db / 20.0f);
+            }
+            fl *= vol_multiplier;
+            fr *= vol_multiplier;
 
             // Global EQ
             fl = apply_eq(eq_global_l, fl);

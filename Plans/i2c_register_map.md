@@ -59,4 +59,3 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 | `0x01` | `SUB_STATE` | R | 0 / 1 | 0: Getrennt, 1: Verbunden |
 | `0x02` | `SUB_RSSI` | R | 0 - 255 | Signalstärke zum Subwoofer |
 | `0x03` | `BUF_DELAY` | W/R | 0 - 255 | Audio-Delay in ms zum Latenzausgleich |
-| `0x04` | `PAIR_CMD` | W/R | 0 / 1 | 1 = Starte Pairing-Modus (Subwoofer-Suche) für max. 60s. Fällt automatisch auf 0 zurück. |
