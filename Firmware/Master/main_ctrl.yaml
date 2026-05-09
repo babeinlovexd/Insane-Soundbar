@@ -39,6 +39,16 @@ external_components:
       type: local
       path: components
 
+# Enable web server for exposing sensors and versions to PC-Flasher-Tool
+web_server:
+  port: 80
+
+text_sensor:
+  - platform: template
+    name: "Slave Versions JSON"
+    id: slave_versions
+    icon: "mdi:information-outline"
+
 # I2C Bus setup
 i2c:
   - id: i2c_bus
@@ -127,18 +137,23 @@ globals:
     type: std::string
     initial_value: '"WLAN"'
 
-# Interval for Display Shift (every 2 minutes)
+# Interval for Display Shift and Version Updating
 interval:
   - interval: 2min
     then:
       - lambda: |-
           id(display_shift_x) = (id(display_shift_x) + 1) % 3;
           id(display_shift_y) = (id(display_shift_y) + 1) % 3;
+  - interval: 60s
+    then:
+      - lambda: |-
+          id(isb_orchestrator_inst).update_versions();
 
 # Custom ISB Orchestrator Component
 isb_orchestrator:
   id: isb_orchestrator_inst
   i2c_id: i2c_bus
+  versions_sensor: slave_versions
 
 # Integration of IR receiver to Orchestrator
 remote_receiver:

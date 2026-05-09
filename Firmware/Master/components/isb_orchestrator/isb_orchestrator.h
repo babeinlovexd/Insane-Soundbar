@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/i2c/i2c.h"
+#include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/core/preferences.h"
 #include "esphome/core/log.h"
 #include <map>
@@ -32,9 +33,11 @@ class ISBOrchestrator : public Component {
   uint8_t current_volume = 50;
   i2c::I2CBus *i2c_bus_;
   nvs_handle_t my_handle;
+  text_sensor::TextSensor *versions_sensor_{nullptr};
 
  public:
   void set_i2c_bus(i2c::I2CBus *bus) { i2c_bus_ = bus; }
+  void set_versions_sensor(text_sensor::TextSensor *sensor) { versions_sensor_ = sensor; }
 
   void setup() override {
     // 1. Send MUTE to DSP immediately
@@ -72,6 +75,8 @@ class ISBOrchestrator : public Component {
         set_dsp_mute(false);
         ESP_LOGI("ISB_ORCH", "System Boot Sequence Complete. Unmuted.");
     }
+
+    update_versions();
   }
 
   void setup_i2s() {
@@ -106,8 +111,6 @@ class ISBOrchestrator : public Component {
     if (err != ESP_OK) return;
 
     size_t required_size;
-    // Assuming simple format: code=target (e.g. FFFFFF=Vol+) - in reality you might save differently.
-    // For simplicity, we just look for specific keys we know
     const char* keys[] = {"Vol+", "Vol-", "Mute", "Input Next"};
     for(const char* key : keys) {
         uint32_t code = 0;
@@ -191,6 +194,42 @@ class ISBOrchestrator : public Component {
     i2c_bus_->write(BT_I2C_ADDR, &reg, 1);
     i2c_bus_->read(BT_I2C_ADDR, &val, 1);
     return (val == 2 || val == 3);
+  }
+
+  std::string get_slave_version(uint8_t addr) {
+    uint8_t major = 0, minor = 0, patch = 0;
+
+    uint8_t reg_major = 0xF0;
+    i2c_bus_->write(addr, &reg_major, 1);
+    i2c_bus_->read(addr, &major, 1);
+
+    uint8_t reg_minor = 0xF1;
+    i2c_bus_->write(addr, &reg_minor, 1);
+    i2c_bus_->read(addr, &minor, 1);
+
+    uint8_t reg_patch = 0xF2;
+    i2c_bus_->write(addr, &reg_patch, 1);
+    i2c_bus_->read(addr, &patch, 1);
+
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%d.%d.%d", major, minor, patch);
+    return std::string(buf);
+  }
+
+  void update_versions() {
+    if (versions_sensor_ != nullptr) {
+      std::string dsp_ver = get_slave_version(DSP_I2C_ADDR);
+      std::string bt_ver = get_slave_version(BT_I2C_ADDR);
+      std::string sub_ver = get_slave_version(SUB_I2C_ADDR);
+
+      char json_buf[128];
+      snprintf(json_buf, sizeof(json_buf),
+               "{\"dsp\":\"%s\",\"bt\":\"%s\",\"sub\":\"%s\"}",
+               dsp_ver.c_str(), bt_ver.c_str(), sub_ver.c_str());
+
+      versions_sensor_->publish_state(json_buf);
+      ESP_LOGD("ISB_ORCH", "Published versions: %s", json_buf);
+    }
   }
 };
 

@@ -7,4 +7,4 @@ build/
 CMakeFiles/
 CMakeCache.txt
 compile_commands.json
-Firmware/DSP/build/
+__pycache__/
