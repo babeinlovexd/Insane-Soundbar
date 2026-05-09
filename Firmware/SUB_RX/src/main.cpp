@@ -17,7 +17,7 @@
 #define PIN_FAULT_IN      34
 
 // --- AUDIO CONFIGURATION ---
-#define SAMPLE_RATE       16000
+#define SAMPLE_RATE       11025
 #define I2S_PORT          I2S_NUM_0
 #define JITTER_BUFFER_MS  50
 #define BYTES_PER_SEC     (SAMPLE_RATE * 2) // 16-bit Mono = 2 bytes per sample
