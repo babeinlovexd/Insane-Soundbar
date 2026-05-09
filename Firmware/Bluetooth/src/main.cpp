@@ -203,6 +203,15 @@ void requestEvent() {
             case 0x03: // SYNC_VOL
                 Wire.write(reg_sync_vol);
                 break;
+            case 0xF0: // Major Version
+                Wire.write(1);
+                break;
+            case 0xF1: // Minor Version
+                Wire.write(0);
+                break;
+            case 0xF2: // Patch Version
+                Wire.write(0);
+                break;
             default:
                 Wire.write(0);
                 break;
