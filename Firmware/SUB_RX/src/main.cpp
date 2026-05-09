@@ -22,7 +22,6 @@
 #define JITTER_BUFFER_MS  50
 #define BYTES_PER_SEC     (SAMPLE_RATE * 2) // 16-bit Mono = 2 bytes per sample
 #define BUFFER_SIZE_BYTES (BYTES_PER_SEC * JITTER_BUFFER_MS / 1000 * 4) // 4x factor for headroom
-#define BUFFER_FILL_THRESHOLD (BYTES_PER_SEC * JITTER_BUFFER_MS / 1000)
 
 // --- SYSTEM STATE ---
 RingbufHandle_t audio_buffer;
@@ -32,6 +31,7 @@ bool stream_active = false;
 bool is_buffering = true;
 unsigned long last_led_blink = 0;
 bool led_state = false;
+size_t dynamic_fill_threshold = (BYTES_PER_SEC * JITTER_BUFFER_MS / 1000);
 
 // --- PAIRING & SETUP STATE ---
 enum SystemState {
@@ -41,10 +41,15 @@ enum SystemState {
 };
 SystemState current_state = STATE_AUDIO_RX;
 
-// --- PAIRING PROTOCOL ---
+// --- PROTOCOL STRUCTURES ---
 typedef struct {
     uint8_t type; // 1 = Request, 2 = ACK
 } __attribute__((packed)) pairing_packet_t;
+
+typedef struct {
+    uint8_t buf_delay;
+    int16_t audio_data[120];
+} __attribute__((packed)) audio_packet_t;
 
 Preferences preferences;
 WebServer server(80);
@@ -88,10 +93,17 @@ void handlePair() {
 // --- ESP-NOW CALLBACK ---
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     if (current_state == STATE_AUDIO_RX) {
-        if (data_len > 0) {
+        if (data_len == sizeof(audio_packet_t)) {
             last_packet_time = millis();
-            // Send data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
-            xRingbufferSend(audio_buffer, (void *)data, data_len, 0);
+            audio_packet_t *packet = (audio_packet_t *)data;
+
+            // Update dynamic threshold based on header (buf_delay is in ms)
+            if (packet->buf_delay > 0) {
+                dynamic_fill_threshold = (BYTES_PER_SEC * packet->buf_delay) / 1000;
+            }
+
+            // Send raw audio data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
+            xRingbufferSend(audio_buffer, (void *)packet->audio_data, sizeof(packet->audio_data), 0);
         }
     } else if (current_state == STATE_PAIRING) {
         // Look for pairing ACK from master
@@ -305,7 +317,7 @@ void loop() {
     } else {
         // Stream is active
         if (is_buffering) {
-            if (bytes_filled >= BUFFER_FILL_THRESHOLD) {
+            if (bytes_filled >= dynamic_fill_threshold) {
                 is_buffering = false; // Buffer filled enough, start playing
                 if (is_muted) {
                     is_muted = false;
