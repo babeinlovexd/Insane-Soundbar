@@ -95,17 +95,18 @@ void handlePair() {
 // --- ESP-NOW CALLBACK ---
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     if (current_state == STATE_AUDIO_RX) {
-        if (data_len == sizeof(audio_packet_t)) {
+        // NEU: Dynamische Länge zulassen! (data_len > 1 stellt sicher, dass buf_delay existiert)
+        if (data_len > 1 && data_len <= sizeof(audio_packet_t)) {
             last_packet_time = millis();
             audio_packet_t *packet = (audio_packet_t *)data;
 
-            // Update dynamic threshold based on header (buf_delay is in ms)
             if (packet->buf_delay > 0) {
                 dynamic_fill_threshold = (BYTES_PER_SEC * packet->buf_delay) / 1000;
             }
 
-            // Send raw audio data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
-            xRingbufferSend(audio_buffer, (void *)packet->audio_data, sizeof(packet->audio_data), 0);
+            // NEU: Exakt nur die empfangenen Bytes in den Ringbuffer schieben (-1 wegen buf_delay)
+            size_t audio_bytes = data_len - 1;
+            xRingbufferSend(audio_buffer, (void *)packet->audio_data, audio_bytes, 0);
         }
     } else if (current_state == STATE_PAIRING) {
         // Look for pairing ACK from master
