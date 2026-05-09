@@ -52,7 +52,7 @@ typedef struct {
 
 // Data structure for pairing messages
 typedef struct {
-    uint8_t type; // 0 = Audio, 1 = Pairing Broadcast, 2 = Pairing ACK
+    uint8_t type; // 1 = Request, 2 = ACK
 } __attribute__((packed)) pairing_packet_t;
 
 static void trigger_interrupt(void) {
