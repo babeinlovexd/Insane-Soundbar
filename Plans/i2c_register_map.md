@@ -59,3 +59,15 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 | `0x01` | `SUB_STATE` | R | 0 / 1 | 0: Getrennt, 1: Verbunden |
 | `0x02` | `SUB_RSSI` | R | 0 - 255 | Signalstärke zum Subwoofer |
 | `0x03` | `BUF_DELAY` | W/R | 0 - 255 | Audio-Delay in ms zum Latenzausgleich |
+| `0x04` | `PAIR_CMD` | W/R | 0 / 1 | 1 = Starte Pairing-Modus (Subwoofer-Suche) für max. 60s. Fällt automatisch auf 0 zurück. |
+
+---
+
+## 5. Firmware Versioning (Global für alle ESP32 Slaves)
+*Einheitliches Schema für BT-RX & SUB-TX*
+
+| Reg | Name | R/W | Werte | Funktion |
+| :--- | :--- | :--- | :--- | :--- |
+| `0xF0` | `FW_MAJOR` | R | 0-255 | Firmware Major Version (X.0.0) |
+| `0xF1` | `FW_MINOR` | R | 0-255 | Firmware Minor Version (0.X.0) |
+| `0xF2` | `FW_PATCH` | R | 0-255 | Firmware Patch Version (0.0.X) |
