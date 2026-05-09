@@ -1,0 +1,198 @@
+substitutions:
+  name: "main-ctrl"
+  friendly_name: "Insane Sound Bar Master"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  platformio_options:
+    board_build.flash_mode: dio
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+    version: recommended
+
+# API & OTA (with secrets)
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Insane-Soundbar Fallback"
+    password: !secret ap_password
+
+logger:
+  level: DEBUG
+
+# External components
+external_components:
+  - source:
+      type: local
+      path: components
+
+# Enable web server for exposing sensors and versions to PC-Flasher-Tool
+web_server:
+  port: 80
+
+text_sensor:
+  - platform: template
+    name: "Slave Versions JSON"
+    id: slave_versions
+    icon: "mdi:information-outline"
+
+# I2C Bus setup
+i2c:
+  - id: i2c_bus
+    sda: GPIO8
+    scl: GPIO9
+    scan: true
+
+# UARTs for Stream Server (Flash-Hub)
+uart:
+  - id: uart_dsp
+    tx_pin: GPIO4
+    rx_pin: GPIO5
+    baud_rate: 115200
+  - id: uart_sub
+    tx_pin: GPIO6
+    rx_pin: GPIO7
+    baud_rate: 115200
+  - id: uart_bt
+    tx_pin: GPIO10
+    rx_pin: GPIO11
+    baud_rate: 115200
+
+# Stream Servers
+stream_server:
+  - id: stream_dsp
+    uart_id: uart_dsp
+    port: 8081
+  - id: stream_sub
+    uart_id: uart_sub
+    port: 8082
+  - id: stream_bt
+    uart_id: uart_bt
+    port: 8083
+
+# Font for Display
+font:
+  - file: "gfonts://Roboto"
+    id: roboto_12
+    size: 12
+  - file: "gfonts://Roboto"
+    id: roboto_24
+    size: 24
+
+# Display Setup
+display:
+  - platform: ssd1306_i2c
+    model: "SH1106 128x64"
+    id: oled_display
+    i2c_id: i2c_bus
+    address: 0x3C
+    update_interval: 1s
+    lambda: |-
+      // Setup offsets to prevent burn-in
+      int ox = id(display_shift_x);
+      int oy = id(display_shift_y);
+
+      // Draw Input
+      it.printf(ox + 64, oy + 20, id(roboto_24), TextAlign::TOP_CENTER, "%s", id(current_input_text).c_str());
+
+      // Draw Volume Overlay if active
+      if (id(volume_overlay_timer) > 0) {
+        it.printf(ox + 64, oy + 40, id(roboto_12), TextAlign::TOP_CENTER, "Vol: %d", id(isb_orchestrator_inst).get_volume());
+        id(volume_overlay_timer) -= 1;
+      }
+
+      // Status Indicators
+      if (id(isb_orchestrator_inst).is_sub_connected()) {
+        it.print(ox + 0, oy + 50, id(roboto_12), "SW");
+      }
+      if (id(isb_orchestrator_inst).is_bt_connected()) {
+        it.print(ox + 110, oy + 50, id(roboto_12), "BT");
+      }
+
+# Variables for Display
+globals:
+  - id: display_shift_x
+    type: int
+    initial_value: '0'
+  - id: display_shift_y
+    type: int
+    initial_value: '0'
+  - id: volume_overlay_timer
+    type: int
+    initial_value: '0'
+  - id: current_input_text
+    type: std::string
+    initial_value: '"WLAN"'
+
+# Interval for Display Shift and Version Updating
+interval:
+  - interval: 2min
+    then:
+      - lambda: |-
+          id(display_shift_x) = (id(display_shift_x) + 1) % 3;
+          id(display_shift_y) = (id(display_shift_y) + 1) % 3;
+  - interval: 60s
+    then:
+      - lambda: |-
+          id(isb_orchestrator_inst).update_versions();
+
+# Custom ISB Orchestrator Component
+isb_orchestrator:
+  id: isb_orchestrator_inst
+  i2c_id: i2c_bus
+  versions_sensor: slave_versions
+
+# Integration of IR receiver to Orchestrator
+remote_receiver:
+  - id: ir_receiver_module
+    pin: GPIO1
+    dump: [nec, rc5]
+    tolerance: 50%
+    on_nec:
+      then:
+        - lambda: |-
+            id(isb_orchestrator_inst).handle_ir_code(x.address << 16 | x.command);
+            id(volume_overlay_timer) = 3; // Show volume for 3 ticks (3 sec)
+    on_rc5:
+      then:
+        - lambda: |-
+            id(isb_orchestrator_inst).handle_ir_code(x.address << 16 | x.command);
+            id(volume_overlay_timer) = 3;
+
+# Provide HA interface for IR Learning
+select:
+  - platform: template
+    name: "IR Learn Target"
+    id: ir_learn_target
+    options:
+      - "None"
+      - "Vol+"
+      - "Vol-"
+      - "Mute"
+      - "Input Next"
+    initial_option: "None"
+    optimistic: true
+
+button:
+  - platform: template
+    name: "Start IR Learn"
+    on_press:
+      - lambda: |-
+          if (id(ir_learn_target).current_option() != "None") {
+            id(isb_orchestrator_inst).enable_learn_mode(id(ir_learn_target).current_option());
+          } else {
+            ESP_LOGW("ISB_ORCH", "Select a target first!");
+          }
