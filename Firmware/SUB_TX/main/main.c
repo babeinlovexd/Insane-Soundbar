@@ -12,6 +12,7 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 #include "esp_mac.h"
+#include "esp_timer.h"
 
 #define I2C_SLAVE_SCL_IO 22
 #define I2C_SLAVE_SDA_IO 21
@@ -33,6 +34,7 @@ static const char *TAG = "SUB_TX";
 static volatile uint8_t reg_sub_state = 0;
 static volatile uint8_t reg_sub_rssi = 0;
 static volatile uint8_t reg_buf_delay = 0;
+static volatile uint8_t reg_pair_cmd = 0;
 
 static uint8_t peer_mac[ESP_NOW_ETH_ALEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static bool is_unicast = false;
@@ -40,6 +42,7 @@ static int failed_acks = 0;
 #define MAX_FAILED_ACKS 20
 
 static i2s_chan_handle_t rx_chan;
+static esp_timer_handle_t pairing_timer;
 
 #define AUDIO_PAYLOAD_SIZE 240
 typedef struct {
@@ -47,10 +50,22 @@ typedef struct {
     int16_t audio_data[AUDIO_PAYLOAD_SIZE / 2];
 } __attribute__((packed)) audio_packet_t;
 
+// Data structure for pairing messages
+typedef struct {
+    uint8_t type; // 0 = Audio, 1 = Pairing Broadcast, 2 = Pairing ACK
+} __attribute__((packed)) pairing_packet_t;
+
 static void trigger_interrupt(void) {
     gpio_set_level(INT_PIN, 1);
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(5)); // Changed to 5ms
     gpio_set_level(INT_PIN, 0);
+}
+
+static void pairing_timeout_cb(void* arg) {
+    if (reg_pair_cmd == 1) {
+        ESP_LOGI(TAG, "Pairing timeout reached.");
+        reg_pair_cmd = 0;
+    }
 }
 
 static void esp_now_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -68,21 +83,52 @@ static void esp_now_send_cb(const uint8_t *mac_addr, esp_now_send_status_t statu
                     reg_sub_rssi = 0;
                     trigger_interrupt();
                 }
-
-                // Fallback to broadcast
-                esp_now_del_peer(peer_mac);
-                memset(peer_mac, 0xFF, ESP_NOW_ETH_ALEN);
-                esp_now_peer_info_t peerInfo = {};
-                memcpy(peerInfo.peer_addr, peer_mac, ESP_NOW_ETH_ALEN);
-                peerInfo.channel = 1;
-                peerInfo.ifidx = WIFI_IF_STA;
-                peerInfo.encrypt = false;
-                esp_now_add_peer(&peerInfo);
-
-                is_unicast = false;
-                failed_acks = 0;
             }
         }
+    }
+}
+
+static void save_mac_to_nvs(const uint8_t* mac) {
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
+    if (err == ESP_OK) {
+        nvs_set_blob(my_handle, "sub_mac", mac, ESP_NOW_ETH_ALEN);
+        nvs_commit(my_handle);
+        nvs_close(my_handle);
+        ESP_LOGI(TAG, "Saved MAC to NVS");
+    }
+}
+
+static bool load_mac_from_nvs(uint8_t* mac) {
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open("storage", NVS_READONLY, &my_handle);
+    if (err == ESP_OK) {
+        size_t required_size = ESP_NOW_ETH_ALEN;
+        err = nvs_get_blob(my_handle, "sub_mac", mac, &required_size);
+        nvs_close(my_handle);
+        if (err == ESP_OK && required_size == ESP_NOW_ETH_ALEN) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void configure_peer(const uint8_t* mac) {
+    esp_now_del_peer(peer_mac);
+    memcpy(peer_mac, mac, ESP_NOW_ETH_ALEN);
+
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, peer_mac, ESP_NOW_ETH_ALEN);
+    peerInfo.channel = 1;
+    peerInfo.ifidx = WIFI_IF_STA;
+    peerInfo.encrypt = false;
+
+    esp_err_t err = esp_now_add_peer(&peerInfo);
+    if(err == ESP_OK) {
+        is_unicast = true;
+        ESP_LOGI(TAG, "Peer configured");
+    } else {
+        ESP_LOGE(TAG, "Failed to configure peer");
     }
 }
 
@@ -97,22 +143,32 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8
     if (rssi_mapped > 255) rssi_mapped = 255;
     reg_sub_rssi = (uint8_t)rssi_mapped;
 
-    if (reg_sub_state == 0) {
+    if (reg_sub_state == 0 && is_unicast) {
         reg_sub_state = 1;
     }
     failed_acks = 0;
 
-    if (!is_unicast) {
-        esp_now_del_peer(peer_mac);
-        memcpy(peer_mac, esp_now_info->src_addr, ESP_NOW_ETH_ALEN);
-        esp_now_peer_info_t peerInfo = {};
-        memcpy(peerInfo.peer_addr, peer_mac, ESP_NOW_ETH_ALEN);
-        peerInfo.channel = 1;
-        peerInfo.ifidx = WIFI_IF_STA;
-        peerInfo.encrypt = false;
-        esp_now_add_peer(&peerInfo);
+    // Handle pairing logic
+    if (reg_pair_cmd == 1 && data_len >= sizeof(pairing_packet_t)) {
+        pairing_packet_t* packet = (pairing_packet_t*)data;
+        if (packet->type == 1) { // Pairing Broadcast
+            ESP_LOGI(TAG, "Received pairing broadcast.");
 
-        is_unicast = true;
+            // 2. Save MAC to NVS
+            save_mac_to_nvs(esp_now_info->src_addr);
+
+            // Set up peer
+            configure_peer(esp_now_info->src_addr);
+
+            // Send ACK
+            pairing_packet_t ack = {.type = 2};
+            esp_now_send(peer_mac, (uint8_t*)&ack, sizeof(ack));
+
+            // 3. Update registers
+            reg_pair_cmd = 0;
+            reg_sub_state = 1;
+            esp_timer_stop(pairing_timer);
+        }
     }
 }
 
@@ -130,28 +186,43 @@ static void i2c_slave_task(void *arg) {
                 for (int i = 1; i < size; i++) {
                     if (current_reg == 0x03) {
                         reg_buf_delay = rx_data[i];
+                    } else if (current_reg == 0x04) {
+                        uint8_t old_cmd = reg_pair_cmd;
+                        reg_pair_cmd = rx_data[i];
+                        if (reg_pair_cmd == 1 && old_cmd == 0) {
+                            ESP_LOGI(TAG, "Pairing mode started via I2C");
+                            // Start 60s timeout
+                            esp_timer_start_once(pairing_timer, 60000000ULL);
+                        }
                     }
                     current_reg++;
                 }
             } else {
                 // Register select command
                 i2c_reset_tx_fifo(I2C_SLAVE_NUM);
-                uint8_t vals[3] = {0};
+                uint8_t vals[4] = {0};
                 int tx_len = 0;
 
                 if (current_reg == 0x01) {
                     vals[0] = reg_sub_state;
                     vals[1] = reg_sub_rssi;
                     vals[2] = reg_buf_delay;
-                    tx_len = 3;
+                    vals[3] = reg_pair_cmd;
+                    tx_len = 4;
                 }
                 else if (current_reg == 0x02) {
                     vals[0] = reg_sub_rssi;
                     vals[1] = reg_buf_delay;
-                    tx_len = 2;
+                    vals[2] = reg_pair_cmd;
+                    tx_len = 3;
                 }
                 else if (current_reg == 0x03) {
                     vals[0] = reg_buf_delay;
+                    vals[1] = reg_pair_cmd;
+                    tx_len = 2;
+                }
+                else if (current_reg == 0x04) {
+                    vals[0] = reg_pair_cmd;
                     tx_len = 1;
                 }
 
@@ -171,14 +242,16 @@ static void audio_task(void *arg) {
 
     while (1) {
         if (i2s_channel_read(rx_chan, stereo_buf, sizeof(stereo_buf), &bytes_read, portMAX_DELAY) == ESP_OK) {
-            int frames = bytes_read / 4; // 2 bytes per sample, 2 channels = 4 bytes per frame
-            for (int i = 0; i < frames; i++) {
-                // Extract only the left channel
-                packet.audio_data[i] = stereo_buf[i * 2];
-            }
-            packet.buf_delay = reg_buf_delay;
+            if (is_unicast) {
+                int frames = bytes_read / 4; // 2 bytes per sample, 2 channels = 4 bytes per frame
+                for (int i = 0; i < frames; i++) {
+                    // Extract only the left channel
+                    packet.audio_data[i] = stereo_buf[i * 2];
+                }
+                packet.buf_delay = reg_buf_delay;
 
-            esp_now_send(peer_mac, (uint8_t *)&packet, 1 + frames * 2);
+                esp_now_send(peer_mac, (uint8_t *)&packet, 1 + frames * 2);
+            }
         }
     }
 }
@@ -231,12 +304,21 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_now_register_send_cb(esp_now_send_cb));
     ESP_ERROR_CHECK(esp_now_register_recv_cb(esp_now_recv_cb));
 
-    esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, peer_mac, ESP_NOW_ETH_ALEN);
-    peerInfo.channel = 1;
-    peerInfo.ifidx = WIFI_IF_STA;
-    peerInfo.encrypt = false;
-    ESP_ERROR_CHECK(esp_now_add_peer(&peerInfo));
+    // Load MAC from NVS if available
+    uint8_t stored_mac[ESP_NOW_ETH_ALEN];
+    if (load_mac_from_nvs(stored_mac)) {
+        configure_peer(stored_mac);
+    } else {
+        // Fallback to broadcast for pairing mode listening? Or wait for pair cmd.
+        // Waiting for pair cmd is fine.
+    }
+
+    // Initialize pairing timer
+    const esp_timer_create_args_t timer_args = {
+        .callback = &pairing_timeout_cb,
+        .name = "pairing_timeout"
+    };
+    ESP_ERROR_CHECK(esp_timer_create(&timer_args, &pairing_timer));
 
     // Initialize I2S in Slave RX Mode
     i2s_chan_config_t rx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_SLAVE);
