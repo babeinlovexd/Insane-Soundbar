@@ -33,6 +33,9 @@ static void i2c_slave_handler() {
             case REG_XOVER_SAT_HP: val = g_dsp_state.xover_sat_hp; break;
             case REG_XOVER_MID_LP: val = g_dsp_state.xover_mid_lp; break;
             case REG_XOVER_HIGH_HP: val = g_dsp_state.xover_high_hp; break;
+            case REG_FW_VER_MAJOR: val = 1; break;
+            case REG_FW_VER_MINOR: val = 0; break;
+            case REG_FW_VER_PATCH: val = 0; break;
             case REG_SYS_STATUS: val = g_dsp_state.sys_status; break;
             default: val = 0xFF; break;
         }

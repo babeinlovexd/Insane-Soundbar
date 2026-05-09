@@ -26,6 +26,11 @@
 #define REG_XOVER_MID_LP   0x32 // W: Mid Low-pass (*100 Hz, 35=3500)
 #define REG_XOVER_HIGH_HP  0x33 // W: High High-pass (*100 Hz, 35=3500)
 
+// Firmware Version
+#define REG_FW_VER_MAJOR   0xF0 // R: Major version
+#define REG_FW_VER_MINOR   0xF1 // R: Minor version
+#define REG_FW_VER_PATCH   0xF2 // R: Patch version
+
 // System Status
 #define REG_SYS_STATUS     0xFF // R: 0=OK, >0 Error Code
 
