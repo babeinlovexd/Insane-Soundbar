@@ -27,7 +27,7 @@
 #define I2S_LRCK_PIN 26
 #define I2S_DIN_PIN 27
 
-#define SAMPLE_RATE 16000
+#define SAMPLE_RATE 11025
 
 static const char *TAG = "SUB_TX";
 
