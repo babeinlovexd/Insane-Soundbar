@@ -7,6 +7,8 @@
 #include <Preferences.h>
 #include <WebServer.h>
 
+#define FW_VERSION "1.0.0"
+
 // --- PIN DEFINITIONS ---
 #define PIN_LED           4
 #define PIN_I2S_BCLK      14
@@ -145,6 +147,10 @@ void setupI2S() {
 }
 
 void setup() {
+    Serial.begin(115200);
+    Serial.print("SUB_RX FW_VERSION: ");
+    Serial.println(FW_VERSION);
+
     // 1. Hardware Initialization (Mute ASAP to prevent pop)
     pinMode(PIN_MUTE_CTRL, OUTPUT);
     digitalWrite(PIN_MUTE_CTRL, LOW); // Mute immediately
