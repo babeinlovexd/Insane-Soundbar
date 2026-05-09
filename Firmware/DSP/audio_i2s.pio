@@ -1,0 +1,100 @@
+.program audio_i2s_out
+.side_set 2
+
+; I2S Transmit program (Master)
+; X is 1/2 of clock period - 1
+; Y is bit depth - 2
+; OSR is continuously fed via DMA
+; side set is [LRCK, BCLK]
+
+                    ;        /--- LRCK
+                    ;        |/-- BCLK
+bitloop1:
+    out pins, 1       side 0b00
+    jmp x-- bitloop1  side 0b01
+    out pins, 1       side 0b00
+    set x, 14         side 0b01 ; X = (bit depth / 2) - 1, assuming 16 bit
+
+bitloop0:
+    out pins, 1       side 0b10
+    jmp x-- bitloop0  side 0b11
+    out pins, 1       side 0b10
+    set x, 14         side 0b11 ; X = (bit depth / 2) - 1
+
+public entry_point:
+    set x, 14         side 0b01
+    jmp bitloop0      side 0b01
+
+% c-sdk {
+static inline void audio_i2s_out_program_init(PIO pio, uint sm, uint offset, uint data_pin, uint clock_pin_base, float sample_rate, bool drive_clock) {
+    pio_sm_config c = audio_i2s_out_program_get_default_config(offset);
+
+    sm_config_set_out_pins(&c, data_pin, 1);
+    if (drive_clock) {
+        sm_config_set_sideset_pins(&c, clock_pin_base);
+    }
+    sm_config_set_out_shift(&c, false, true, 32); // Shift left, auto-pull at 32
+
+    pio_gpio_init(pio, data_pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, true);
+
+    if (drive_clock) {
+        pio_gpio_init(pio, clock_pin_base);     // BCLK
+        pio_gpio_init(pio, clock_pin_base + 1); // LRCK
+        pio_sm_set_consecutive_pindirs(pio, sm, clock_pin_base, 2, true);
+    }
+
+    float div = 125000000.0f / (sample_rate * 16.0f * 2.0f * 2.0f);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
+
+.program audio_i2s_in
+; I2S Receive program (Slave)
+; Reads input on rising edge of BCLK
+
+; Wait for LRCK to transition
+wait 0 gpio 11 ; Hardcoding for WLAN for simplicity or we can pass as config, but let's just wait on GPIO to be generic
+wait 1 gpio 11
+
+; Read bits
+.wrap_target
+    wait 0 gpio 10
+    wait 1 gpio 10
+    in pins, 1
+.wrap
+
+% c-sdk {
+static inline void audio_i2s_in_program_init(PIO pio, uint sm, uint offset, uint data_pin, uint clock_pin_base) {
+    pio_sm_config c = audio_i2s_in_program_get_default_config(offset);
+
+    sm_config_set_in_pins(&c, data_pin);
+    // Set wait GPIOs to clock pins. Note: This assumes specific pins or we could use `wait 0 pin x` relative to IN base.
+    // However `wait pin` uses the IN base. Let's fix that.
+    // If we set IN base to clock_pin_base, then wait 0 pin 0 is BCLK, wait 0 pin 1 is LRCK.
+    // But then `in pins, 1` reads from clock_pin_base!
+    // So `in pins` requires `in_base`. Let's use `jmp pin` or `wait gpio`.
+    // The proper way in PIO is usually to set IN base to data pin, and just use `wait gpio x` by dynamically setting the instruction.
+    // For now we will overwrite the instructions with the correct GPIO numbers at init time.
+
+    pio->instr_mem[offset + 0] = pio_encode_wait_gpio(false, clock_pin_base + 1);
+    pio->instr_mem[offset + 1] = pio_encode_wait_gpio(true, clock_pin_base + 1);
+    pio->instr_mem[offset + 2] = pio_encode_wait_gpio(false, clock_pin_base);
+    pio->instr_mem[offset + 3] = pio_encode_wait_gpio(true, clock_pin_base);
+
+    pio_gpio_init(pio, data_pin);
+    pio_gpio_init(pio, clock_pin_base);
+    pio_gpio_init(pio, clock_pin_base + 1);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, false);
+    pio_sm_set_consecutive_pindirs(pio, sm, clock_pin_base, 2, false);
+
+    sm_config_set_in_shift(&c, false, true, 32);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

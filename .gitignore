@@ -1,0 +1,11 @@
+.pio/
+build/
+Firmware/DSP/build/
+*.bin
+*.elf
+*.map
+.cmake/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+__pycache__/
