@@ -139,10 +139,6 @@ class ISBOrchestrator : public Component {
     ESP_LOGD("ISB_ORCH", "Sent MUTE=%d to DSP", mute);
   }
 
-  void set_mute(bool mute) {
-    set_dsp_mute(mute);
-  }
-
   void set_dsp_volume(uint8_t vol_linear) {
     uint8_t vol_log = (vol_linear * vol_linear) / 100;
     current_volume = vol_log;
