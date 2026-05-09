@@ -1,0 +1,9 @@
+.pio/
+build/
+*.bin
+*.elf
+*.map
+.cmake/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
