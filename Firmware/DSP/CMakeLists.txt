@@ -29,6 +29,7 @@ target_link_libraries(isb_dsp
     hardware_clocks
     hardware_irq
     hardware_sync
+    hardware_adc
 )
 
 # PIO assembly

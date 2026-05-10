@@ -37,6 +37,7 @@ static void i2c_slave_handler() {
             case REG_FW_VER_MINOR: val = 0; break;
             case REG_FW_VER_PATCH: val = 0; break;
             case REG_SYS_STATUS: val = g_dsp_state.sys_status; break;
+            case REG_TEMP_C: val = g_dsp_state.temp_c; break;
             default: val = 0xFF; break;
         }
         i2c_get_hw(I2C_PORT)->data_cmd = val;

@@ -7,6 +7,7 @@
 #define REG_VOL_MASTER     0x01 // W: 0-100 %
 #define REG_MUTE_CTRL      0x02 // W: 0 / 1 (1 = mute system)
 #define REG_INPUT_SEL      0x03 // W: 0-3 (0:Toslink, 1:Aux, 2:BT, 3:WLAN)
+#define REG_TEMP_C         0x05 // R: Internal ADC Temp (C)
 
 // EQ Bands
 #define REG_EQ_B1          0x10 // W: Bass (10 = 0dB)
@@ -52,6 +53,7 @@ typedef struct {
     uint8_t xover_mid_lp;
     uint8_t xover_high_hp;
     uint8_t sys_status;
+    uint8_t temp_c;
 
     // Internal flags
     volatile bool registers_updated;

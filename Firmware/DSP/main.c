@@ -5,6 +5,7 @@
 #include "i2c_slave_handler.h"
 #include "audio_routing.h"
 #include "dsp_core1.h"
+#include "hardware/adc.h"
 
 // Hard mute system
 static void mute_system(bool mute) {
@@ -40,6 +41,11 @@ int main() {
     i2c_slave_init();
     audio_routing_init();
 
+    // Initialize ADC for Temperature
+    adc_init();
+    adc_set_temp_sensor_enabled(true);
+    adc_select_input(4);
+
     // Launch Core 1 (DSP Processing)
     multicore_launch_core1(dsp_core1_entry);
 
@@ -72,13 +78,20 @@ int main() {
             mute_system(false);
         }
 
+        // Temperature reading
+        const float conversion_factor = 3.3f / (1 << 12);
+        float adc = (float)adc_read() * conversion_factor;
+        // Temperature sensor typical characteristics
+        float t = 27.0f - (adc - 0.706f) / 0.001721f;
+        g_dsp_state.temp_c = (uint8_t)t;
+
         // I2S/Clock error detection placeholder
         // If sync error:
         // gpio_put(PIN_INT_OUT, 1);
         // sleep_ms(5);
         // gpio_put(PIN_INT_OUT, 0);
 
-        sleep_ms(10);
+        sleep_ms(100);
     }
 
     return 0;
