@@ -65,6 +65,17 @@ text_sensor:
       return id(input_source).state; // actually use .state but suppress or just return id(input_source).state;
 
 
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_leds
+    name: "Soundbar Status"
+    pin: GPIO2
+    num_leds: 4
+    rgb_order: GRB
+    chipset: WS2812
+    color_correct: [0.6, 0.6, 0.6]
+
+
 # I2C Bus setup
 i2c:
   - id: i2c_bus
