@@ -22,6 +22,9 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 | `0x01` | `VOL_MASTER` | W | 0 - 100 | Hauptlautstärke in % |
 | `0x02` | `MUTE_CTRL` | W | 0 / 1 | 1 = Systemweit stummschalten (TPA & DAC) |
 | `0x03` | `INPUT_SEL` | W | 0 - 3 | 0:Toslink, 1:Aux, 2:BT, 3:WLAN |
+| `0x05` | `TEMP_C` | R | °C | Interne ADC-Temperatur |
+| `0x06` | `NIGHT_MODE` | W | 0 / 1 | 1 = Aktiviert DRC-Kompression |
+| `0x07` | `CLEAR_VOICE`| W | 0 / 1 | 1 = Aktiviert Sprach-EQ |
 | `0x10` | `EQ_B1` | W | 0 - 20 | Bass (10 = 0dB) |
 | `0x11` | `EQ_B2` | W | 0 - 20 | Tief-Mitten (10 = 0dB) |
 | `0x12` | `EQ_B3` | W | 0 - 20 | Mitten (10 = 0dB) |
