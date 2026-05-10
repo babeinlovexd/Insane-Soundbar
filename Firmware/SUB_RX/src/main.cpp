@@ -104,7 +104,6 @@ void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
             last_packet_time = millis();
             audio_packet_t *packet = (audio_packet_t *)data;
 
-            // Update dynamic threshold based on header (buf_delay is in ms)
             if (packet->buf_delay > 0) {
                 dynamic_fill_threshold = (BYTES_PER_SEC * packet->buf_delay) / 1000;
             }
