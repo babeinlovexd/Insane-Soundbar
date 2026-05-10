@@ -223,6 +223,49 @@ void setup() {
 }
 
 void loop() {
+    // --- TPA RUNTIME FAULT PROTECTION ---
+    static unsigned long last_fault_blink = 0;
+    static bool fault_led_state = false;
+    static bool was_in_fault = false;
+
+    // Fault Pin ist Active-Low (LOW = Überhitzung oder Kurzschluss)
+    bool current_fault = (digitalRead(PIN_FAULT_IN) == LOW);
+
+    if (current_fault) {
+        // 1. Notabschaltung (nur einmalig triggern)
+        if (!was_in_fault) {
+            Serial.println("CRITICAL FAULT: Subwoofer TPA Fehler! Endstufe wird abgeschaltet.");
+
+            // TPA und DAC stummschalten / in den Shutdown zwingen
+            digitalWrite(PIN_MUTE_CTRL, LOW);
+            digitalWrite(PIN_XSMT_SDZ_CTRL, LOW);
+
+            was_in_fault = true;
+        }
+
+        // 2. LED extrem schnell blinken lassen (50ms Intervall)
+        if (millis() - last_fault_blink > 50) {
+            fault_led_state = !fault_led_state;
+            digitalWrite(PIN_LED, fault_led_state ? HIGH : LOW);
+            last_fault_blink = millis();
+        }
+
+        // WICHTIG: Early Return, damit der normale ESP-NOW Status-Code in der Loop
+        // nicht das Blinken oder die Mute-Pins überschreibt!
+        return;
+    } else {
+        // Fehler ist behoben oder gar nicht erst aufgetreten
+        if (was_in_fault) {
+            Serial.println("FAULT BEHOBEN: Subwoofer TPA arbeitet wieder normal.");
+
+            // Endstufe wieder aufwecken
+            digitalWrite(PIN_MUTE_CTRL, HIGH);
+            digitalWrite(PIN_XSMT_SDZ_CTRL, HIGH);
+
+            was_in_fault = false;
+        }
+    }
+
     uint32_t now = millis();
 
     if (current_state == STATE_SETUP_AP) {
