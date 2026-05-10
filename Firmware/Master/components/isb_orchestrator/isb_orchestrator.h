@@ -26,7 +26,25 @@ namespace esphome {
 namespace isb_orchestrator {
 
 class ISBOrchestrator : public Component {
+
  protected:
+  std::function<void()> on_learn_success_callback_{nullptr};
+  std::function<void(bool)> on_mute_toggled_callback_{nullptr};
+  std::function<void()> on_standby_callback_{nullptr};
+
+ public:
+  void set_on_learn_success_callback(std::function<void()> cb) { on_learn_success_callback_ = cb; }
+  void set_on_mute_toggled_callback(std::function<void(bool)> cb) { on_mute_toggled_callback_ = cb; }
+  void set_on_standby_callback(std::function<void()> cb) { on_standby_callback_ = cb; }
+
+  bool is_muted() {
+    uint8_t reg = 0x02;
+    uint8_t val = 0;
+    i2c_bus_->write(DSP_I2C_ADDR, &reg, 1);
+    i2c_bus_->read(DSP_I2C_ADDR, &val, 1);
+    return val == 1;
+  }
+
   bool learn_mode_active = false;
   std::string learn_target = "";
   std::map<uint32_t, std::string> ir_mappings;
@@ -132,6 +150,7 @@ class ISBOrchestrator : public Component {
     uint8_t data[2] = {0x02, mute ? (uint8_t)1 : (uint8_t)0};
     i2c_bus_->write(DSP_I2C_ADDR, data, 2);
     ESP_LOGD("ISB_ORCH", "Sent MUTE=%d to DSP", mute);
+    if (on_mute_toggled_callback_) on_mute_toggled_callback_(mute);
   }
 
   void set_dsp_volume(uint8_t vol_linear) {
@@ -208,6 +227,7 @@ class ISBOrchestrator : public Component {
     if (learn_mode_active) {
       ESP_LOGI("ISB_ORCH", "Learned code %08X for target %s", code, learn_target.c_str());
       save_ir_mapping(code, learn_target);
+      if (on_learn_success_callback_) on_learn_success_callback_();
       learn_mode_active = false;
       learn_target = "";
     } else {
