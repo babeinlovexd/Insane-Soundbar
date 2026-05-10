@@ -122,6 +122,43 @@ class ISBOrchestrator : public Component {
     set_dsp_mute(mute);
   }
 
+
+  void set_eq(uint8_t band, uint8_t value) {
+    if (band < 1 || band > 5) return;
+    uint8_t reg = 0x10 + (band - 1);
+    uint8_t data[2] = {reg, value};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGD("ISB_ORCH", "Sent EQ B%d=%d to DSP", band, value);
+  }
+
+  void set_sub_eq(uint8_t value) {
+    uint8_t data[2] = {0x20, value};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGD("ISB_ORCH", "Sent SUB EQ=%d to DSP", value);
+  }
+
+  void set_crossover(std::string type, float value) {
+    uint8_t reg = 0;
+    uint8_t val = 0;
+    if (type == "Sub LP") { reg = 0x30; val = (uint8_t)value; }
+    else if (type == "Sat HP") { reg = 0x31; val = (uint8_t)value; }
+    else if (type == "Mid LP") { reg = 0x32; val = (uint8_t)(value / 100); }
+    else if (type == "High HP") { reg = 0x33; val = (uint8_t)(value / 100); }
+    else return;
+
+    uint8_t data[2] = {reg, val};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Sent Crossover %s=%d to DSP", type.c_str(), val);
+  }
+
+  uint8_t get_dsp_temp() {
+    uint8_t reg = 0x05;
+    uint8_t val = 0;
+    i2c_bus_->write(DSP_I2C_ADDR, &reg, 1);
+    i2c_bus_->read(DSP_I2C_ADDR, &val, 1);
+    return val;
+  }
+
   void set_volume(float vol_linear) {
     set_dsp_volume((uint8_t)vol_linear);
   }
@@ -224,6 +261,14 @@ class ISBOrchestrator : public Component {
                dsp_ver.c_str(), bt_ver.c_str(), sub_ver.c_str());
 
       versions_sensor_->publish_state(json_buf);
+
+      // Also publish to dedicated sensors if they exist (we'll look them up by id later, or they can be published using a template sensor lambda)
+      // Actually, since we want the JSON split, we should publish to them from the YAML using on_value or we can do it via C++ APIs if we export them.
+      // But it's easier to just poll the temperature here since we're updating versions anyway.
+
+      uint8_t temp = get_dsp_temp();
+      // Wait, we need to pass this to the sensor. A cleaner way is doing a custom sensor in YAML that calls get_dsp_temp.
+
       ESP_LOGD("ISB_ORCH", "Published versions: %s", json_buf);
     }
   }

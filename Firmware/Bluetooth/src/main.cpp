@@ -173,33 +173,48 @@ void receiveEvent(int howMany) {
 }
 
 void requestEvent() {
-    // Array-Block-Senden für den Gerätenamen
+    // If a request comes in, we reply starting from current_reg.
+    // If it's the DEV_NAME (0x10 to 0x2F), we send the rest of the string block.
+
     if (current_reg >= 0x10 && current_reg <= 0x2F) {
         uint8_t index = current_reg - 0x10;
         int len = strlen(reg_dev_name);
-        uint8_t response_len = (0x2F - 0x10 + 1) - index;
-        uint8_t buf[32] = {0}; // Puffer mit Nullen initialisieren
 
+        // Write the remaining part of the string starting from 'index'
+        // Wire.write can take an array and length
         if (index < len) {
-            int copy_len = len - index;
-            if (copy_len > response_len) copy_len = response_len;
-            memcpy(buf, reg_dev_name + index, copy_len);
+            Wire.write((const uint8_t*)(reg_dev_name + index), len - index);
         }
-        // Exakt EIN Write-Aufruf für den ganzen Block!
-        Wire.write(buf, response_len);
-    }
-    // Single-Byte Senden für Status-Register
-    else {
-        uint8_t resp = 0;
+
+        // Fill the rest with 0
+        for (int i = len; i <= (0x2F - 0x10); i++) {
+            if (i >= index) {
+                Wire.write(0);
+            }
+        }
+    } else {
         switch (current_reg) {
-            case 0x01: resp = reg_bt_state; break;
-            case 0x02: resp = reg_bt_rssi; break;
-            case 0x03: resp = reg_sync_vol; break;
-            case 0xF0: resp = 1; break;
-            case 0xF1: resp = 0; break;
-            case 0xF2: resp = 0; break;
-            default:   resp = 0; break;
+            case 0x01: // BT_STATE
+                Wire.write(reg_bt_state);
+                break;
+            case 0x02: // BT_RSSI
+                Wire.write(reg_bt_rssi);
+                break;
+            case 0x03: // SYNC_VOL
+                Wire.write(reg_sync_vol);
+                break;
+            case 0xF0: // Major Version
+                Wire.write(1);
+                break;
+            case 0xF1: // Minor Version
+                Wire.write(0);
+                break;
+            case 0xF2: // Patch Version
+                Wire.write(0);
+                break;
+            default:
+                Wire.write(0);
+                break;
         }
-        Wire.write(&resp, 1);
     }
 }

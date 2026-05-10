@@ -49,6 +49,22 @@ text_sensor:
     id: slave_versions
     icon: "mdi:information-outline"
 
+  - platform: template
+    name: "DSP Version"
+    id: dsp_version
+  - platform: template
+    name: "BT Version"
+    id: bt_version
+  - platform: template
+    name: "SUB Version"
+    id: sub_version
+  - platform: template
+    name: "Active Input"
+    id: active_input_sensor
+    lambda: |-
+      return id(input_source).state; // actually use .state but suppress or just return id(input_source).state;
+
+
 # I2C Bus setup
 i2c:
   - id: i2c_bus
@@ -193,6 +209,14 @@ interval:
     then:
       - lambda: |-
           id(isb_orchestrator_inst).update_versions();
+          id(dsp_temp).publish_state(id(isb_orchestrator_inst).get_dsp_temp());
+          // Extract versions from JSON
+          std::string json = id(slave_versions).state;
+          // Simple parsing or just update directly in Orchestrator.
+          // For now, let's just do it directly.
+          id(dsp_version).publish_state(id(isb_orchestrator_inst).get_slave_version(0x20));
+          id(bt_version).publish_state(id(isb_orchestrator_inst).get_slave_version(0x21));
+          id(sub_version).publish_state(id(isb_orchestrator_inst).get_slave_version(0x22));
 
 # Custom ISB Orchestrator Component
 isb_orchestrator:
@@ -244,6 +268,50 @@ select:
 
 
 button:
+  - platform: restart
+    name: "Master Restart"
+
+  - platform: template
+    name: "Flash Mode: Bluetooth (ESP32)"
+    id: btn_flash_bt
+    icon: "mdi:cellphone-link"
+    on_press:
+      - switch.turn_off: bt_boot_pin
+      - delay: 50ms
+      - switch.turn_off: bt_en_pin
+      - delay: 100ms
+      - switch.turn_on: bt_en_pin
+      - delay: 100ms
+      - switch.turn_on: bt_boot_pin
+
+  - platform: template
+    name: "Flash Mode: Sub-TX (ESP32)"
+    id: btn_flash_sub
+    icon: "mdi:speaker-wireless"
+    on_press:
+      - switch.turn_off: sub_boot_pin
+      - delay: 50ms
+      - switch.turn_off: sub_en_pin
+      - delay: 100ms
+      - switch.turn_on: sub_en_pin
+      - delay: 100ms
+      - switch.turn_on: sub_boot_pin
+
+  - platform: template
+    name: "Flash Mode: DSP (RP2354)"
+    id: btn_flash_dsp
+    icon: "mdi:chip"
+    on_press:
+      - switch.turn_off: dsp_boot_pin
+      - switch.turn_on: dsp_bootsel_pin
+      - delay: 50ms
+      - switch.turn_off: dsp_en_pin
+      - delay: 100ms
+      - switch.turn_on: dsp_en_pin
+      - delay: 100ms
+      - switch.turn_on: dsp_boot_pin
+      - switch.turn_off: dsp_bootsel_pin
+
   - platform: template
     name: "Start IR Learn"
     on_press:
@@ -261,6 +329,62 @@ button:
       - lambda: 'id(isb_orchestrator_inst).pair_subwoofer();'
 
 
+
+sensor:
+  - platform: internal_temperature
+    name: "Master Temperature"
+  - platform: template
+    name: "DSP Temperature"
+    id: dsp_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 0
+
+switch:
+  - platform: gpio
+    pin: GPIO14
+    name: "DSP Flash EN"
+    id: dsp_en_pin
+    internal: true
+  - platform: template
+    name: "DSP Flash CS"
+    id: dsp_boot_pin
+    internal: true
+    optimistic: true
+    turn_on_action:
+      - lambda: |
+          gpio_set_direction((gpio_num_t)15, GPIO_MODE_OUTPUT);
+          gpio_set_level((gpio_num_t)15, 1);
+    turn_off_action:
+      - lambda: |
+          gpio_set_direction((gpio_num_t)15, GPIO_MODE_OUTPUT);
+          gpio_set_level((gpio_num_t)15, 0);
+  - platform: gpio
+    pin: GPIO21
+    name: "DSP Flash SD1"
+    id: dsp_bootsel_pin
+    internal: true
+  - platform: gpio
+    pin: GPIO41
+    name: "BT Flash EN"
+    id: bt_en_pin
+    internal: true
+  - platform: gpio
+    pin: GPIO42
+    name: "BT Flash BOOT"
+    id: bt_boot_pin
+    internal: true
+  - platform: gpio
+    pin: GPIO47
+    name: "SUB Flash EN"
+    id: sub_en_pin
+    internal: true
+  - platform: gpio
+    pin: GPIO48
+    name: "SUB Flash BOOT"
+    id: sub_boot_pin
+    internal: true
+
+
 number:
   - platform: template
     name: "Master Volume"
@@ -270,3 +394,102 @@ number:
     step: 1
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_volume(x);'
+  - platform: template
+    name: "EQ Band 1"
+    id: eq_b1
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_eq(1, x);'
+  - platform: template
+    name: "EQ Band 2"
+    id: eq_b2
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_eq(2, x);'
+  - platform: template
+    name: "EQ Band 3"
+    id: eq_b3
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_eq(3, x);'
+  - platform: template
+    name: "EQ Band 4"
+    id: eq_b4
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_eq(4, x);'
+  - platform: template
+    name: "EQ Band 5"
+    id: eq_b5
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_eq(5, x);'
+  - platform: template
+    name: "Sub Trim"
+    id: sub_trim
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_sub_eq(x);'
+  - platform: template
+    name: "Sub LP Crossover"
+    id: sub_lp
+    min_value: 50
+    max_value: 255
+    step: 1
+    initial_value: 120
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_crossover("Sub LP", x);'
+  - platform: template
+    name: "Sat HP Crossover"
+    id: sat_hp
+    min_value: 50
+    max_value: 255
+    step: 1
+    initial_value: 95
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_crossover("Sat HP", x);'
+  - platform: template
+    name: "Mid LP Crossover"
+    id: mid_lp
+    min_value: 500
+    max_value: 10000
+    step: 100
+    initial_value: 3500
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_crossover("Mid LP", x);'
+  - platform: template
+    name: "High HP Crossover"
+    id: high_hp
+    min_value: 500
+    max_value: 10000
+    step: 100
+    initial_value: 3500
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_crossover("High HP", x);'
+  - platform: template
+    name: "OLED Brightness"
+    id: oled_brightness
+    min_value: 0
+    max_value: 100
+    step: 1
+    initial_value: 100
+    set_action:
+      - lambda: 'id(oled_display).set_contrast(x / 100.0);'
