@@ -348,19 +348,11 @@ switch:
     name: "DSP Flash EN"
     id: dsp_en_pin
     internal: true
-  - platform: template
+  - platform: gpio
+    pin: GPIO15
     name: "DSP Flash CS"
     id: dsp_boot_pin
     internal: true
-    optimistic: true
-    turn_on_action:
-      - lambda: |
-          gpio_set_direction((gpio_num_t)15, GPIO_MODE_OUTPUT);
-          gpio_set_level((gpio_num_t)15, 1);
-    turn_off_action:
-      - lambda: |
-          gpio_set_direction((gpio_num_t)15, GPIO_MODE_OUTPUT);
-          gpio_set_level((gpio_num_t)15, 0);
   - platform: gpio
     pin: GPIO21
     name: "DSP Flash SD1"
