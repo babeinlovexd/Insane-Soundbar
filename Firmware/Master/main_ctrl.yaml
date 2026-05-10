@@ -8,6 +8,31 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
 
+  on_boot:
+    priority: 600
+    then:
+      - light.turn_on:
+          id: status_leds
+          effect: "Knight Rider"
+          red: 1.0
+          green: 0.0
+          blue: 0.0
+          brightness: 1.0
+      - lambda: |-
+          id(isb_orchestrator_inst).set_on_learn_success_callback([]() {
+            id(led_rainbow).execute();
+          });
+          id(isb_orchestrator_inst).set_on_mute_toggled_callback([](bool muted) {
+            if (muted) {
+              id(led_mute_pause).execute();
+            } else {
+              id(led_input_active).execute();
+            }
+          });
+          id(isb_orchestrator_inst).set_on_standby_callback([]() {
+            id(led_standby).execute();
+          });
+
 esp32:
   board: esp32-s3-devkitc-1
   framework:
@@ -29,6 +54,13 @@ wifi:
   ap:
     ssid: "Insane-Soundbar Fallback"
     password: !secret ap_password
+  on_connect:
+    - script.execute: update_led_state
+  on_disconnect:
+    - light.turn_on:
+        id: status_leds
+        effect: "WLAN Disconnect"
+
 
 logger:
   level: DEBUG
@@ -74,7 +106,122 @@ light:
     rgb_order: GRB
     chipset: WS2812
     color_correct: [0.6, 0.6, 0.6]
+    effects:
+      - addressable_scan:
+          name: "Knight Rider"
+          move_interval: 100ms
+          scan_width: 1
+      - addressable_rainbow:
+          name: "Rainbow"
+          speed: 10
+          width: 4
+      - strobe:
+          name: "WLAN Disconnect"
+          colors:
+            - state: true
+              brightness: 100%
+              red: 100%
+              green: 0%
+              blue: 0%
+              duration: 500ms
+            - state: false
+              duration: 500ms
 
+script:
+  - id: led_standby
+    then:
+      - light.turn_on:
+          id: status_leds
+          red: 0.5
+          green: 0.0
+          blue: 0.5
+          brightness: 0.5
+          effect: "none"
+
+  - id: led_mute_pause
+    then:
+      - light.turn_on:
+          id: status_leds
+          red: 1.0
+          green: 0.07
+          blue: 0.57
+          brightness: 0.5
+          effect: "none"
+
+  - id: led_input_active
+    then:
+      - if:
+          condition:
+            lambda: 'return id(input_source).state == "Bluetooth";'
+          then:
+            - light.turn_on:
+                id: status_leds
+                red: 0.0
+                green: 0.0
+                blue: 1.0
+                brightness: 1.0
+                effect: "none"
+      - if:
+          condition:
+            lambda: 'return id(input_source).state == "Toslink";'
+          then:
+            - light.turn_on:
+                id: status_leds
+                red: 0.0
+                green: 1.0
+                blue: 1.0
+                brightness: 1.0
+                effect: "none"
+      - if:
+          condition:
+            lambda: 'return id(input_source).state == "Aux";'
+          then:
+            - light.turn_on:
+                id: status_leds
+                red: 1.0
+                green: 0.5
+                blue: 0.0
+                brightness: 1.0
+                effect: "none"
+      - if:
+          condition:
+            lambda: 'return id(input_source).state == "WLAN";'
+          then:
+            - light.turn_on:
+                id: status_leds
+                red: 1.0
+                green: 1.0
+                blue: 1.0
+                brightness: 1.0
+                effect: "none"
+
+  - id: led_rainbow
+    then:
+      - light.turn_on:
+          id: status_leds
+          effect: "Rainbow"
+          brightness: 1.0
+      - delay: 3s
+      - script.execute: update_led_state
+
+  - id: update_led_state
+    mode: restart
+    then:
+      - if:
+          condition:
+            wifi.connected:
+          then:
+            - if:
+                condition:
+                  lambda: 'return id(isb_orchestrator_inst).is_muted();'
+                then:
+                  - script.execute: led_mute_pause
+                else:
+                  - script.execute: led_input_active
+          else:
+            - light.turn_on:
+                id: status_leds
+                effect: "WLAN Disconnect"
 
 # I2C Bus setup
 i2c:
@@ -122,10 +269,13 @@ media_player:
     # Status-Sync mit dem RP2354 DSP (Reg 0x02)
     on_play:
       - lambda: 'id(isb_orchestrator_inst).set_mute(false);'
+      - script.execute: led_input_active
     on_pause:
       - lambda: 'id(isb_orchestrator_inst).set_mute(true);'
+      - script.execute: led_mute_pause
     on_idle:
       - lambda: 'id(isb_orchestrator_inst).set_mute(true);'
+      - script.execute: led_standby
 
 
 # UARTs for Stream Server (Flash-Hub)
@@ -279,6 +429,7 @@ select:
           id(isb_orchestrator_inst).set_input(x);
           id(current_input_text) = x;           // NEU: Updated das OLED-Display
           id(input_source).publish_state(x);    // NEU: Updated die Anzeige in Home Assistant
+          id(led_input_active).execute();
 
 
 button:
