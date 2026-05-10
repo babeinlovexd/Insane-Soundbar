@@ -100,7 +100,7 @@ void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, in
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 #endif
     if (current_state == STATE_AUDIO_RX) {
-        if (data_len > 1) { // Header (1 byte buf_delay) + Audio Data
+        if (data_len > 1 && data_len <= sizeof(audio_packet_t)) { // Header (1 byte buf_delay) + Audio Data
             last_packet_time = millis();
             audio_packet_t *packet = (audio_packet_t *)data;
 
