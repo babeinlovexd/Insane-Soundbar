@@ -5,6 +5,7 @@
 | **U3 S3 (Master)** | EN | EN | Reset | EN Switch | PullUp 10kohm |
 | **U3 S3 (Master)** | GPIO0 | BOOT | BOOT | BOOT Switch | PullUp 10kohm |
 | **U3 S3 (Master)** | GPIO1 | IN_IR | IR Receiver | TSOP4838 (Pin 1) | Für TV-Remote Learning |
+| **U3 S3 (Master)** | GPIO2 | DOUT | Front LED`s | WS2812 DIN | Für Front Statusanzeige|
 | **U3 S3 (Master)** | GPIO4 | UART_TX_DSP | UART TX | QSPI_SD3 (U4 RP) |  |
 | **U3 S3 (Master)** | GPIO5 | UART_RX_DSP | UART RX | QSPI_SD2 (U4 RP) |  |
 | **U3 S3 (Master)** | GPIO6 | UART_TX_SUB | UART TX | RXD0 (U1 SUB) | 33ohm |
