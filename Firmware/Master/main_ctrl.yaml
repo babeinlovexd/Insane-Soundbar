@@ -384,6 +384,7 @@ isb_orchestrator:
   id: isb_orchestrator_inst
   i2c_id: i2c_bus
   versions_sensor: slave_versions
+  fault_sensor: tpa_fault_sensor
 
 # Integration of IR receiver to Orchestrator
 remote_receiver:
@@ -503,6 +504,13 @@ button:
       - lambda: 'id(isb_orchestrator_inst).pair_subwoofer();'
 
 
+
+binary_sensor:
+  - platform: template
+    name: "Verstärker Überlastung (Fault)"
+    id: tpa_fault_sensor
+    device_class: problem
+    entity_category: diagnostic
 
 sensor:
   - platform: internal_temperature

@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/i2c/i2c.h"
 #include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/core/preferences.h"
 #include "esphome/core/log.h"
 #include <map>
@@ -52,10 +53,12 @@ class ISBOrchestrator : public Component {
   i2c::I2CBus *i2c_bus_;
   nvs_handle_t my_handle;
   text_sensor::TextSensor *versions_sensor_{nullptr};
+  binary_sensor::BinarySensor *fault_sensor_{nullptr};
 
  public:
   void set_i2c_bus(i2c::I2CBus *bus) { i2c_bus_ = bus; }
   void set_versions_sensor(text_sensor::TextSensor *sensor) { versions_sensor_ = sensor; }
+  void set_fault_sensor(binary_sensor::BinarySensor *sensor) { fault_sensor_ = sensor; }
 
   void setup() override {
     // 1. Send MUTE to DSP immediately
@@ -85,6 +88,7 @@ class ISBOrchestrator : public Component {
     // Check fault pins. In a real system, you'd wait/loop if low.
     if (gpio_get_level(FAULT_H_PIN) == 0 || gpio_get_level(FAULT_M_PIN) == 0) {
         ESP_LOGE("ISB_ORCH", "Fault detected on U8 or U9! Cannot Unmute safely.");
+        set_dsp_mute(true);
     } else {
         // Korrigierte Boot-Sequenz: System bleibt im Standby!
         this->set_timeout("init_mute", 500, [this]() {
@@ -94,6 +98,30 @@ class ISBOrchestrator : public Component {
     }
 
     update_versions();
+  }
+
+  void loop() override {
+    static uint32_t last_fault_check = 0;
+    static bool last_fault_state = false;
+
+    // Non-blocking Check alle 500ms
+    if (millis() - last_fault_check > 500) {
+      bool current_fault = (gpio_get_level(FAULT_H_PIN) == 0 || gpio_get_level(FAULT_M_PIN) == 0);
+
+      if (current_fault != last_fault_state) {
+          // Status live an das YAML-Frontend pushen
+          if (fault_sensor_) fault_sensor_->publish_state(current_fault);
+          last_fault_state = current_fault;
+
+          if (current_fault) {
+              ESP_LOGE("ISB_ORCH", "RUNTIME FAULT: Überhitzung/Kurzschluss an U8/U9! DSP Mute erzwungen.");
+              set_dsp_mute(true);
+          } else {
+              ESP_LOGI("ISB_ORCH", "FAULT behoben. Verstärker arbeiten wieder im Normalbereich.");
+          }
+      }
+      last_fault_check = millis();
+    }
   }
 
   void load_ir_mappings() {
