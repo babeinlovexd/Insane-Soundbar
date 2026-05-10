@@ -1,6 +1,6 @@
 # Insane Sound Bar - SUB-RX (Subwoofer Empfänger)
 
-Dieses Modul (ESP32-WROOM-32U) befindet sich im aktiven Subwoofer der *Insane Sound Bar*. Es empfängt Audiodaten drahtlos via ESP-NOW von der Soundbar und leitet diese über I2S an den PCM5102A-DAC und den TPA3116-Verstärker weiter.
+Dieses Modul (ESP32-WROOM-32UE-N4) befindet sich im aktiven Subwoofer der *Insane Sound Bar*. Es empfängt Audiodaten drahtlos via ESP-NOW von der Soundbar und leitet diese über I2S an den PCM5102A-DAC und den TPA3116-Verstärker weiter.
 
 ## Hauptfunktionen
 
