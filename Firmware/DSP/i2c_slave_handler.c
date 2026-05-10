@@ -41,7 +41,8 @@ static void i2c_slave_handler() {
             default: val = 0xFF; break;
         }
         i2c_get_hw(I2C_PORT)->data_cmd = val;
-        i2c_get_hw(I2C_PORT)->clr_rd_req;
+        volatile uint32_t dummy_clear = i2c_get_hw(I2C_PORT)->clr_rd_req;
+        (void)dummy_clear;
     }
 
     // Receive data

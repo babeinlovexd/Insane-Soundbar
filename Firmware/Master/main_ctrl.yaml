@@ -74,15 +74,15 @@ i2c:
 
 i2s_audio:
   - id: i2s_bus_out
-    i2s_bclk_pin: GPIO15
-    i2s_lrclk_pin: GPIO16
+    i2s_bclk_pin: GPIO38
+    i2s_lrclk_pin: GPIO39
 
 speaker:
   - platform: i2s_audio
     id: isb_i2s_speaker
     dac_type: external
     i2s_audio_id: i2s_bus_out
-    i2s_dout_pin: GPIO17
+    i2s_dout_pin: GPIO40
     channel: stereo
     use_apll: false
     i2s_comm_fmt: stand_i2s
@@ -264,7 +264,10 @@ select:
       - "Bluetooth"
       - "WLAN"
     set_action:
-      - lambda: 'id(isb_orchestrator_inst).set_input(x);'
+      - lambda: |-
+          id(isb_orchestrator_inst).set_input(x);
+          id(current_input_text) = x;           // NEU: Updated das OLED-Display
+          id(input_source).publish_state(x);    // NEU: Updated die Anzeige in Home Assistant
 
 
 button:
