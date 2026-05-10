@@ -93,10 +93,14 @@ void handlePair() {
 }
 
 // --- ESP-NOW CALLBACK ---
+#if defined(ESP_IDF_VERSION) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
+    const uint8_t *mac_addr = esp_now_info->src_addr;
+#else
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+#endif
     if (current_state == STATE_AUDIO_RX) {
-        // NEU: Dynamische Länge zulassen! (data_len > 1 stellt sicher, dass buf_delay existiert)
-        if (data_len > 1 && data_len <= sizeof(audio_packet_t)) {
+        if (data_len > 1 && data_len <= sizeof(audio_packet_t)) { // Header (1 byte buf_delay) + Audio Data
             last_packet_time = millis();
             audio_packet_t *packet = (audio_packet_t *)data;
 
@@ -104,8 +108,8 @@ void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
                 dynamic_fill_threshold = (BYTES_PER_SEC * packet->buf_delay) / 1000;
             }
 
-            // NEU: Exakt nur die empfangenen Bytes in den Ringbuffer schieben (-1 wegen buf_delay)
-            size_t audio_bytes = data_len - 1;
+            // Send raw audio data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
+            int audio_bytes = data_len - 1;
             xRingbufferSend(audio_buffer, (void *)packet->audio_data, audio_bytes, 0);
         }
     } else if (current_state == STATE_PAIRING) {
