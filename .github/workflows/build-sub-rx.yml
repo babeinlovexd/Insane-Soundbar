@@ -1,0 +1,38 @@
+name: Build SUB_RX Firmware
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+
+      - name: Build Firmware
+        working-directory: Firmware/SUB_RX
+        run: pio run
+
+      - name: Rename Firmware
+        working-directory: Firmware/SUB_RX/.pio/build/esp32dev
+        run: mv firmware.bin sub_rx_firmware.bin
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: Firmware/SUB_RX/.pio/build/esp32dev/sub_rx_firmware.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

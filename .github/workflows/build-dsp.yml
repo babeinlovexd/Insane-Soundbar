@@ -1,0 +1,41 @@
+name: Build DSP Firmware
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
+
+      - name: Setup Pico SDK
+        run: |
+          git clone --depth 1 --branch 2.0.0 https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
+          cd ~/pico-sdk
+          git submodule update --init
+
+      - name: Build Firmware
+        working-directory: Firmware/DSP
+        run: |
+          mkdir build
+          cd build
+          cmake -DPICO_SDK_PATH=~/pico-sdk ..
+          make
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            Firmware/DSP/build/isb_dsp.uf2
+            Firmware/DSP/build/isb_dsp.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

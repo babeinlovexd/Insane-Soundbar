@@ -1,0 +1,31 @@
+name: Build SUB_TX Firmware
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build with ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.2.1
+          target: esp32
+          path: Firmware/SUB_TX
+
+      - name: Rename Firmware
+        working-directory: Firmware/SUB_TX/build
+        run: mv sub_tx.bin sub_tx_firmware.bin
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: Firmware/SUB_TX/build/sub_tx_firmware.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
