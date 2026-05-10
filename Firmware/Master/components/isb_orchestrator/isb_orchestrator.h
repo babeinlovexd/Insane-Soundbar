@@ -98,10 +98,33 @@ class ISBOrchestrator : public Component {
   void save_ir_mapping(uint32_t code, std::string target) {
       err_t err = nvs_open("ir_storage", NVS_READWRITE, &my_handle);
       if (err == ESP_OK) {
+          // Check if target already mapped to something else and erase old entry?
+          // Actually, target is the key, so nvs_set_u32 will overwrite the old value for this key automatically.
+          // BUT in memory we must also remove the old mapping from `ir_mappings`
+          for (auto it = ir_mappings.begin(); it != ir_mappings.end(); ) {
+              if (it->second == target) {
+                  it = ir_mappings.erase(it);
+              } else {
+                  ++it;
+              }
+          }
+          ir_mappings[code] = target;
+
           nvs_set_u32(my_handle, target.c_str(), code);
           nvs_commit(my_handle);
           nvs_close(my_handle);
           ESP_LOGI("ISB_ORCH", "Saved IR Mapping to NVS: %08X -> %s", code, target.c_str());
+      }
+  }
+
+  void clear_all_ir_codes() {
+      err_t err = nvs_open("ir_storage", NVS_READWRITE, &my_handle);
+      if (err == ESP_OK) {
+          nvs_erase_all(my_handle);
+          nvs_commit(my_handle);
+          nvs_close(my_handle);
+          ir_mappings.clear();
+          ESP_LOGI("ISB_ORCH", "Cleared all IR mappings from NVS");
       }
   }
 
@@ -184,7 +207,6 @@ class ISBOrchestrator : public Component {
   void handle_ir_code(uint32_t code) {
     if (learn_mode_active) {
       ESP_LOGI("ISB_ORCH", "Learned code %08X for target %s", code, learn_target.c_str());
-      ir_mappings[code] = learn_target;
       save_ir_mapping(code, learn_target);
       learn_mode_active = false;
       learn_target = "";

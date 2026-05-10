@@ -271,6 +271,15 @@ select:
 
 
 button:
+  - platform: template
+    name: "Alle IR-Codes löschen"
+    id: btn_clear_ir
+    icon: "mdi:delete-sweep"
+    on_press:
+      - lambda: |-
+          id(isb_orchestrator_inst).clear_all_ir_codes();
+          esp_restart();
+
   - platform: restart
     name: "Master Restart"
 
