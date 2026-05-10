@@ -22,7 +22,7 @@ jobs:
 
       - name: Rename Firmware
         working-directory: Firmware/SUB_TX/build
-        run: mv sub_tx.bin sub_tx_firmware.bin
+        run: sudo mv sub_tx.bin sub_tx_firmware.bin
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
