@@ -6,10 +6,10 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 
 | Gerät | Chip | Rolle | I2C-Adresse | SDA | SCL | INT |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Main Control** | ESP32-S3 | **Master** | - | GPIO 8 | GPIO 9 | - |
+| **Main Control** | ESP32-S3-N16R8 | **Master** | - | GPIO 8 | GPIO 9 | - |
 | **Audio DSP** | RP2354 | Slave | `0x20` | GPIO 4 | GPIO 5 | GPIO 2 |
-| **Bluetooth** | ESP32-WROOM-32UE | Slave | `0x21` | GPIO 21 | GPIO 22 | GPIO 23 |
-| **Sub-Link** | ESP32-WROOM-32U | Slave | `0x22` | GPIO 21 | GPIO 22 | GPIO 23 |
+| **Bluetooth** | ESP32-WROOM-32UE-N4 | Slave | `0x21` | GPIO 21 | GPIO 22 | GPIO 23 |
+| **Sub-Link** | ESP32-WROOM-32UE-N4 | Slave | `0x22` | GPIO 21 | GPIO 22 | GPIO 23 |
 | **Display** | 1.3" OLED | Slave | `0x3C` | GPIO 8 | GPIO 9 | - |
 
 ---
@@ -41,7 +41,7 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 
 ---
 
-## 3. Register-Details: ESP32-WROOM-32UE (Bluetooth) @ `0x21`
+## 3. Register-Details: ESP32-WROOM-32UE-N4 (Bluetooth) @ `0x21`
 *Schnittstelle für Smartphone-Steuerung.*
 
 | Reg | Name | R/W | Werte | Funktion |
@@ -54,7 +54,7 @@ Diese Dokumentation dient als verbindliche Referenz für die I2C-Kommunikation d
 
 ---
 
-## 4. Register-Details: ESP32-WROOM-32U (Sub-Link) @ `0x22`
+## 4. Register-Details: ESP32-WROOM-32UE-N4 (Sub-Link) @ `0x22`
 *Transmitter für den kabellosen Subwoofer.*
 
 | Reg | Name | R/W | Werte | Funktion |

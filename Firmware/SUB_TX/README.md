@@ -1,10 +1,10 @@
 # Insane Sound Bar - SUB-TX (Subwoofer Sender)
 
-Dieses Modul ist die Firmware für den ESP32-WROOM-32U auf dem Mainboard der Insane Sound Bar. Es fungiert als Sender für das kabellose Subwoofer-Signal.
+Dieses Modul ist die Firmware für den ESP32-WROOM-32UE-N4 auf dem Mainboard der Insane Sound Bar. Es fungiert als Sender für das kabellose Subwoofer-Signal.
 
 ## Systemübersicht
 
-* **MCU:** ESP32-WROOM-32U
+* **MCU:** ESP32-WROOM-32UE-N4
 * **Audio-Eingang:** I2S Slave RX (Taktgeber ist der RP2354 DSP)
 * **Audio-Ausgang:** ESP-NOW (zum SUB-RX Modul)
 * **Steuerung:** I2C Slave (0x22) vom ESP32-S3 Master + INT-Pin
