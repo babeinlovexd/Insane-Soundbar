@@ -62,48 +62,20 @@ class ISBOrchestrator : public Component {
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
 
-    // 3. Setup I2S Audio Pipeline
-    setup_i2s();
+    // 3. Setup I2S Audio Pipeline (handled by ESPHome YAML now)
 
     // Check fault pins. In a real system, you'd wait/loop if low.
     if (gpio_get_level(FAULT_H_PIN) == 0 || gpio_get_level(FAULT_M_PIN) == 0) {
         ESP_LOGE("ISB_ORCH", "Fault detected on U8 or U9! Cannot Unmute safely.");
     } else {
-        // Wait for I2S Sync (simulated delay, in reality wait for PLL lock / clocks stable)
-        delay(500);
-        // 4. Unmute DSP
-        set_dsp_mute(false);
-        ESP_LOGI("ISB_ORCH", "System Boot Sequence Complete. Unmuted.");
+        // Asynchrones Warten für 500ms, blockiert die ESPHome-Schleife nicht
+        this->set_timeout("unmute_dsp", 500, [this]() {
+            set_dsp_mute(false);
+            ESP_LOGI("ISB_ORCH", "System Boot Sequence Complete. Unmuted.");
+        });
     }
 
     update_versions();
-  }
-
-  void setup_i2s() {
-    i2s_chan_handle_t tx_chan;
-    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-    ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_chan, NULL));
-
-    i2s_std_config_t std_cfg = {
-        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(44100),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
-        .gpio_cfg = {
-            .mclk = I2S_GPIO_UNUSED,    // We only need BCLK, LRCK, DOUT
-            .bclk = GPIO_NUM_15,
-            .ws   = GPIO_NUM_16,
-            .dout = GPIO_NUM_17,
-            .din  = I2S_GPIO_UNUSED,
-            .invert_flags = {
-                .mclk_inv = false,
-                .bclk_inv = false,
-                .ws_inv   = false,
-            },
-        },
-    };
-
-    ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &std_cfg));
-    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
-    ESP_LOGI("ISB_ORCH", "I2S Master initialized on GPIOs: BCLK=15, LRCK=16, DOUT=17");
   }
 
   void load_ir_mappings() {
@@ -140,12 +112,36 @@ class ISBOrchestrator : public Component {
   }
 
   void set_dsp_volume(uint8_t vol_linear) {
-    uint8_t vol_log = (vol_linear * vol_linear) / 100;
-    current_volume = vol_log;
-
-    uint8_t data[2] = {0x01, vol_log};
+    current_volume = vol_linear;
+    uint8_t data[2] = {0x01, vol_linear};
     i2c_bus_->write(DSP_I2C_ADDR, data, 2);
-    ESP_LOGD("ISB_ORCH", "Sent VOL=%d (linear %d) to DSP", vol_log, vol_linear);
+    ESP_LOGD("ISB_ORCH", "Sent VOL=%d to DSP", vol_linear);
+  }
+
+  void set_mute(bool mute) {
+    set_dsp_mute(mute);
+  }
+
+  void set_volume(float vol_linear) {
+    set_dsp_volume((uint8_t)vol_linear);
+  }
+
+  void set_input(std::string input) {
+    uint8_t val = 1; // Default Aux
+    if (input == "Toslink") val = 0;
+    else if (input == "Aux") val = 1;
+    else if (input == "Bluetooth") val = 2;
+    else if (input == "WLAN") val = 3;
+
+    uint8_t data[2] = {0x03, val};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Input source set to: %s (%d)", input.c_str(), val);
+  }
+
+  void pair_subwoofer() {
+    uint8_t data[2] = {0x04, 0x01}; // Write 0x01 to reg 0x04
+    i2c_bus_->write(SUB_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Subwoofer pairing triggered");
   }
 
   void handle_ir_code(uint32_t code) {

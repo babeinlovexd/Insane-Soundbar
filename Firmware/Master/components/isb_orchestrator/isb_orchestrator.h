@@ -68,10 +68,10 @@ class ISBOrchestrator : public Component {
     if (gpio_get_level(FAULT_H_PIN) == 0 || gpio_get_level(FAULT_M_PIN) == 0) {
         ESP_LOGE("ISB_ORCH", "Fault detected on U8 or U9! Cannot Unmute safely.");
     } else {
-        // Asynchrones Warten für 500ms, blockiert die ESPHome-Schleife nicht
-        this->set_timeout("unmute_dsp", 500, [this]() {
-            set_dsp_mute(false);
-            ESP_LOGI("ISB_ORCH", "System Boot Sequence Complete. Unmuted.");
+        // Korrigierte Boot-Sequenz: System bleibt im Standby!
+        this->set_timeout("init_mute", 500, [this]() {
+            set_dsp_mute(true);
+            ESP_LOGI("ISB_ORCH", "System Boot Complete. Amplifiers stay in MUTE/STANDBY.");
         });
     }
 

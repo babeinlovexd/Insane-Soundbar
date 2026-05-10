@@ -93,9 +93,14 @@ void handlePair() {
 }
 
 // --- ESP-NOW CALLBACK ---
+#if defined(ESP_IDF_VERSION) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
+    const uint8_t *mac_addr = esp_now_info->src_addr;
+#else
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+#endif
     if (current_state == STATE_AUDIO_RX) {
-        if (data_len == sizeof(audio_packet_t)) {
+        if (data_len > 1) { // Header (1 byte buf_delay) + Audio Data
             last_packet_time = millis();
             audio_packet_t *packet = (audio_packet_t *)data;
 
@@ -105,7 +110,8 @@ void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
             }
 
             // Send raw audio data to ring buffer. Wait max 0 ticks to not block ESP-NOW task
-            xRingbufferSend(audio_buffer, (void *)packet->audio_data, sizeof(packet->audio_data), 0);
+            int audio_bytes = data_len - 1;
+            xRingbufferSend(audio_buffer, (void *)packet->audio_data, audio_bytes, 0);
         }
     } else if (current_state == STATE_PAIRING) {
         // Look for pairing ACK from master
