@@ -76,6 +76,7 @@ external_components:
   - source:
       type: local
       path: ../../components
+    components: [ isb_orchestrator, stream_server ]
 
 # Enable web server for exposing sensors and versions to PC-Flasher-Tool
 web_server:
@@ -420,6 +421,10 @@ select:
       - "Vol-"
       - "Mute"
       - "Input Next"
+      - "Play"
+      - "Pause"
+      - "Prev"
+      - "Next"
     initial_option: "None"
     optimistic: true
 
@@ -563,6 +568,22 @@ switch:
     name: "SUB Flash BOOT"
     id: sub_boot_pin
     internal: true
+  - platform: template
+    name: "Night Mode (DRC)"
+    id: switch_night_mode
+    optimistic: true
+    turn_on_action:
+      - lambda: 'id(isb_orchestrator_inst).set_night_mode(true);'
+    turn_off_action:
+      - lambda: 'id(isb_orchestrator_inst).set_night_mode(false);'
+  - platform: template
+    name: "Clear Voice"
+    id: switch_clear_voice
+    optimistic: true
+    turn_on_action:
+      - lambda: 'id(isb_orchestrator_inst).set_clear_voice(true);'
+    turn_off_action:
+      - lambda: 'id(isb_orchestrator_inst).set_clear_voice(false);'
 
 
 number:

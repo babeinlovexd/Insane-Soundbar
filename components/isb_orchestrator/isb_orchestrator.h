@@ -129,7 +129,7 @@ class ISBOrchestrator : public Component {
     if (err != ESP_OK) return;
 
     size_t required_size;
-    const char* keys[] = {"Vol+", "Vol-", "Mute", "Input Next"};
+    const char* keys[] = {"Vol+", "Vol-", "Mute", "Input Next", "Play", "Pause", "Prev", "Next"};
     for(const char* key : keys) {
         uint32_t code = 0;
         err = nvs_get_u32(my_handle, key, &code);
@@ -229,6 +229,18 @@ class ISBOrchestrator : public Component {
     return val;
   }
 
+  void set_night_mode(bool state) {
+    uint8_t data[2] = {0x06, state ? (uint8_t)1 : (uint8_t)0};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Sent Night Mode %s to DSP", state ? "ON" : "OFF");
+  }
+
+  void set_clear_voice(bool state) {
+    uint8_t data[2] = {0x07, state ? (uint8_t)1 : (uint8_t)0};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Sent Clear Voice %s to DSP", state ? "ON" : "OFF");
+  }
+
   void set_volume(float vol_linear) {
     set_dsp_volume((uint8_t)vol_linear);
   }
@@ -268,11 +280,25 @@ class ISBOrchestrator : public Component {
           set_dsp_volume(std::min(100, current_volume + 5));
         } else if (action == "Vol-") {
           set_dsp_volume(std::max(0, current_volume - 5));
+        } else if (action == "Play") {
+          send_media_command(0x01);
+        } else if (action == "Pause") {
+          send_media_command(0x02);
+        } else if (action == "Next") {
+          send_media_command(0x03);
+        } else if (action == "Prev") {
+          send_media_command(0x04);
         }
       } else {
         ESP_LOGD("ISB_ORCH", "Unknown IR Code: %08X", code);
       }
     }
+  }
+
+  void send_media_command(uint8_t cmd) {
+    uint8_t data[2] = {0x10, cmd};
+    i2c_bus_->write(BT_I2C_ADDR, data, 2);
+    ESP_LOGI("ISB_ORCH", "Sent Media Command %d to BT Module", cmd);
   }
 
   void enable_learn_mode(std::string target) {
