@@ -29,7 +29,7 @@ def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
 
 def get_app_dir():
@@ -89,7 +89,7 @@ class InsaneFlasher(ctk.CTk):
         super().__init__()
 
         # 1. FENSTER-SETUP
-        self.title("Insane Control Center 2.1")
+        self.title("Insane Control Center")
         self.geometry("800x700")
         self.configure(fg_color="#1a1a1a")
 
@@ -124,7 +124,7 @@ class InsaneFlasher(ctk.CTk):
             self.logo_label = ctk.CTkLabel(self.header_frame, text="ISS", font=("Roboto", 40, "bold"), text_color="#3b8ed0", width=80)
             self.logo_label.grid(row=0, column=0, rowspan=2, padx=(0, 20))
 
-        self.title_label = ctk.CTkLabel(self.header_frame, text="Insane Control Center 2.1", font=("Roboto", 26, "bold"), text_color="#ffffff")
+        self.title_label = ctk.CTkLabel(self.header_frame, text="Insane Control Center", font=("Roboto", 26, "bold"), text_color="#ffffff")
         self.title_label.grid(row=0, column=1, sticky="sw")
 
         # --- STATUS PUNKT (NEBEN DEM TITEL) ---
@@ -235,21 +235,26 @@ class InsaneFlasher(ctk.CTk):
         self.val_sys = create_stat(0, 1, "SYSTEM STATUS")
         self.val_wifi = create_stat(0, 2, "WLAN SIGNAL")
 
-        self.val_temp_amp = create_stat(1, 0, "TEMP VERSTÄRKER", is_temp=True)
-        self.val_temp_esp = create_stat(1, 1, "TEMP ESP32", is_temp=True)
-        self.val_temp_dsp = create_stat(1, 2, "TEMP DSP", is_temp=True)
+        self.val_temp_esp = create_stat(1, 0, "TEMP MASTER ESP", is_temp=True)
+        self.val_temp_dsp = create_stat(1, 1, "TEMP DSP", is_temp=True)
+        self.val_amp_stat = create_stat(1, 2, "AMP FAULT")
 
         self.val_bl_stat = create_stat(2, 0, "MEDIA STATUS")
         self.val_bl_song = create_stat(2, 1, "MEDIA TITEL")
         self.val_bl_art = create_stat(2, 2, "MEDIA INTERPRET")
 
-        self.val_fan = create_stat(3, 0, "LÜFTER SPEED")
-        self.val_amp_stat = create_stat(3, 1, "AMP FAULT")
-        self.val_bl_conn = create_stat(3, 2, "BT CONN")
+        self.val_sub_conn = create_stat(3, 0, "SUB CONN")
+        self.val_bl_conn = create_stat(3, 1, "BT CONN")
+        # Empty space for symmetry
+        self.val_dummy = create_stat(3, 2, "")
 
     def setup_tab_upd(self):
+        # Mache den ganzen Updates Tab scrollbar
+        self.upd_scroll = ctk.CTkScrollableFrame(self.tab_upd, fg_color="transparent")
+        self.upd_scroll.pack(fill="both", expand=True)
+
         # Bluetooth / BT_RX (ESP32)
-        self.sec_btrx = ctk.CTkFrame(self.tab_upd, fg_color="#242424", corner_radius=10)
+        self.sec_btrx = ctk.CTkFrame(self.upd_scroll, fg_color="#242424", corner_radius=10)
         self.sec_btrx.pack(pady=10, padx=20, fill="x")
 
         btrx_top = ctk.CTkFrame(self.sec_btrx, fg_color="transparent")
@@ -269,7 +274,7 @@ class InsaneFlasher(ctk.CTk):
         self.btrx_flash_btn.pack(pady=(0, 15), padx=20, fill="x")
 
         # Subwoofer / SUB_TX (ESP32)
-        self.sec_subtx = ctk.CTkFrame(self.tab_upd, fg_color="#242424", corner_radius=10)
+        self.sec_subtx = ctk.CTkFrame(self.upd_scroll, fg_color="#242424", corner_radius=10)
         self.sec_subtx.pack(pady=10, padx=20, fill="x")
 
         subtx_top = ctk.CTkFrame(self.sec_subtx, fg_color="transparent")
@@ -289,7 +294,7 @@ class InsaneFlasher(ctk.CTk):
         self.subtx_flash_btn.pack(pady=(0, 15), padx=20, fill="x")
 
         # DSP (RP2354)
-        self.sec_rp = ctk.CTkFrame(self.tab_upd, fg_color="#242424", corner_radius=10)
+        self.sec_rp = ctk.CTkFrame(self.upd_scroll, fg_color="#242424", corner_radius=10)
         self.sec_rp.pack(pady=10, padx=20, fill="x")
 
 
@@ -310,7 +315,7 @@ class InsaneFlasher(ctk.CTk):
         self.rp_flash_btn.pack(pady=(0, 15), padx=20, fill="x")
 
         # Globaler Fortschrittsbalken für Flash Vorgänge (Initial unsichtbar)
-        self.flash_progress = ctk.CTkProgressBar(self.tab_upd, height=15, fg_color="#333333", progress_color="#3b8ed0")
+        self.flash_progress = ctk.CTkProgressBar(self.upd_scroll, height=15, fg_color="#333333", progress_color="#3b8ed0")
         self.flash_progress.set(0)
 
     def setup_tab_log(self):
@@ -367,92 +372,114 @@ class InsaneFlasher(ctk.CTk):
         except: pass
 
         ctk.CTkLabel(info_frame, text="Insane Control Center", font=("Roboto", 24, "bold")).pack(pady=10)
-        ctk.CTkLabel(info_frame, text="Version 0.1.0\nTriple-Brain Architecture Hub", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
+        ctk.CTkLabel(info_frame, text="Version 2.2.0\nTriple-Brain Architecture Hub", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
 
         btn = ctk.CTkButton(info_frame, text="GitHub Repository", fg_color="#333333", height=40, command=lambda: webbrowser.open(GITHUB_URL))
         btn.pack(pady=20)
 
     def setup_tab_ctrl(self):
-        # Scrollable Frame für Steuerung + DSP Regler
         scroll_frame = ctk.CTkScrollableFrame(self.tab_ctrl, fg_color="transparent")
         scroll_frame.pack(fill="both", expand=True)
 
-        # --- MEDIA PLAYER ---
-        ctk.CTkLabel(scroll_frame, text="Media Player", font=("Roboto", 20, "bold"), text_color="#3b8ed0").pack(pady=(10, 10))
+        # --- SYSTEM STEUERUNG ---
+        ctk.CTkLabel(scroll_frame, text="System", font=("Roboto", 20, "bold"), text_color="#3b8ed0").pack(pady=(10, 10))
 
-        btn_row = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        sys_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        sys_frame.pack(pady=5, fill="x", padx=40)
+
+        ctk.CTkLabel(sys_frame, text="Input Source", font=("Roboto", 14)).pack(pady=(0, 5))
+        self.input_dropdown = ctk.CTkOptionMenu(sys_frame, values=["Toslink", "Aux", "Bluetooth", "WLAN"], command=lambda val: self.send_select_value("Input Source", val))
+        self.input_dropdown.pack(fill="x", pady=(0, 15))
+
+        btn_row = ctk.CTkFrame(sys_frame, fg_color="transparent")
         btn_row.pack(pady=10)
 
-        encoded_prev = urllib.parse.quote("BL Vorheriger Titel")
-        encoded_play = urllib.parse.quote("BL Play-Pause")
-        encoded_next = urllib.parse.quote("BL Nächster Titel")
+        encoded_pair = __import__('urllib').parse.quote("Pair Subwoofer")
+        ctk.CTkButton(btn_row, text="🔊 Pair Subwoofer", width=140, height=45, corner_radius=20, fg_color="#e67e22", hover_color="#d35400", command=lambda: self.send_action(f"button/{encoded_pair}/press")).pack(side="left", padx=15)
 
-        ctk.CTkButton(btn_row, text="⏮ Zurück", width=110, height=45, corner_radius=20, fg_color="#333333", hover_color="#444444", command=lambda: self.send_action(f"button/{encoded_prev}/press")).pack(side="left", padx=15)
-        ctk.CTkButton(btn_row, text="⏯ Play / Pause", width=160, height=60, corner_radius=30, fg_color="#3b8ed0", hover_color="#2980b9", font=("Roboto", 16, "bold"), command=lambda: self.send_action(f"button/{encoded_play}/press")).pack(side="left", padx=15)
-        ctk.CTkButton(btn_row, text="Weiter ⏭", width=110, height=45, corner_radius=20, fg_color="#333333", hover_color="#444444", command=lambda: self.send_action(f"button/{encoded_next}/press")).pack(side="left", padx=15)
+        encoded_clear_ir = __import__('urllib').parse.quote("Alle IR-Codes löschen")
+        ctk.CTkButton(btn_row, text="🗑 Clear IR", width=140, height=45, corner_radius=20, fg_color="#c0392b", hover_color="#922b21", command=lambda: self.send_action(f"button/{encoded_clear_ir}/press")).pack(side="left", padx=15)
 
-        # --- BLUETOOTH VOLUME ---
-        vol_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-        vol_frame.pack(pady=(20, 30), fill="x", padx=40)
-        ctk.CTkLabel(vol_frame, text="Bluetooth Lautstärke", font=("Roboto", 14)).pack(pady=(0, 10))
-        self.vol_slider = ctk.CTkSlider(vol_frame, from_=0, to=100, button_color="#3b8ed0", button_hover_color="#2980b9", command=self.send_volume)
-        self.vol_slider.pack(fill="x")
+        # --- VOLUME & BRIGHTNESS ---
+        ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#2ecc71").pack(pady=(20, 10))
+        gen_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        gen_frame.pack(pady=5, fill="x", padx=40)
 
-        # --- SUBWOOFER DSP ---
-        ctk.CTkLabel(scroll_frame, text="2.1 Subwoofer DSP", font=("Roboto", 18, "bold"), text_color="#e67e22").pack(pady=(10, 10))
+        ctk.CTkLabel(gen_frame, text="Master Volume (0-100)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.vol_slider = ctk.CTkSlider(gen_frame, from_=0, to=100, number_of_steps=100, button_color="#2ecc71", button_hover_color="#27ae60", command=lambda val: self.send_number_value("Master Volume", val))
+        self.vol_slider.pack(fill="x", pady=(0, 15))
 
-        sub_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-        sub_frame.pack(pady=5, fill="x", padx=40)
+        ctk.CTkLabel(gen_frame, text="OLED Brightness (0-100)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.bright_slider = ctk.CTkSlider(gen_frame, from_=0, to=100, number_of_steps=100, button_color="#3498db", button_hover_color="#2980b9", command=lambda val: self.send_number_value("OLED Brightness", val))
+        self.bright_slider.pack(fill="x", pady=(0, 15))
 
-        ctk.CTkLabel(sub_frame, text="Crossover Frequenz (40-200 Hz)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.cross_slider = ctk.CTkSlider(sub_frame, from_=40, to=200, number_of_steps=32, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_dsp_value("Subwoofer Crossover Frequenz", val))
-        self.cross_slider.set(80)
-        self.cross_slider.pack(fill="x", pady=(0, 15))
+        # --- CROSSOVERS ---
+        ctk.CTkLabel(scroll_frame, text="Frequenzweichen (Crossovers)", font=("Roboto", 18, "bold"), text_color="#e67e22").pack(pady=(20, 10))
+        cross_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        cross_frame.pack(pady=5, fill="x", padx=40)
 
-        ctk.CTkLabel(sub_frame, text="Bass EQ Gain (0-10)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.sub_eq_slider = ctk.CTkSlider(sub_frame, from_=0, to=10, number_of_steps=10, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_dsp_value("Subwoofer Bass EQ", val))
-        self.sub_eq_slider.set(0)
-        self.sub_eq_slider.pack(fill="x", pady=(0, 10))
+        ctk.CTkLabel(cross_frame, text="Sub LP Crossover (50-255)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.sub_lp = ctk.CTkSlider(cross_frame, from_=50, to=255, number_of_steps=205, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("Sub LP Crossover", val))
+        self.sub_lp.pack(fill="x", pady=(0, 15))
 
-        # --- STEREO 5-BAND EQ ---
-        ctk.CTkLabel(scroll_frame, text="Front Stereo 5-Band EQ", font=("Roboto", 18, "bold"), text_color="#2ecc71").pack(pady=(20, 10))
+        ctk.CTkLabel(cross_frame, text="Sat HP Crossover (50-255)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.sat_hp = ctk.CTkSlider(cross_frame, from_=50, to=255, number_of_steps=205, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("Sat HP Crossover", val))
+        self.sat_hp.pack(fill="x", pady=(0, 15))
 
+        ctk.CTkLabel(cross_frame, text="Mid LP Crossover (500-10000)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.mid_lp = ctk.CTkSlider(cross_frame, from_=500, to=10000, number_of_steps=95, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("Mid LP Crossover", val))
+        self.mid_lp.pack(fill="x", pady=(0, 15))
+
+        ctk.CTkLabel(cross_frame, text="High HP Crossover (500-10000)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.high_hp = ctk.CTkSlider(cross_frame, from_=500, to=10000, number_of_steps=95, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("High HP Crossover", val))
+        self.high_hp.pack(fill="x", pady=(0, 15))
+
+        # --- EQ ---
+        ctk.CTkLabel(scroll_frame, text="Equalizer", font=("Roboto", 18, "bold"), text_color="#f1c40f").pack(pady=(20, 10))
         eq_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         eq_frame.pack(pady=5, fill="x", padx=40)
 
+        ctk.CTkLabel(eq_frame, text="Sub Trim (0-20)", font=("Roboto", 12)).pack(pady=(0, 5))
+        self.sub_trim = ctk.CTkSlider(eq_frame, from_=0, to=20, number_of_steps=20, button_color="#f1c40f", button_hover_color="#f39c12", command=lambda val: self.send_number_value("Sub Trim", val))
+        self.sub_trim.pack(fill="x", pady=(0, 15))
+
         bands = [
-            ("Band 1 (60Hz)", "Front EQ Band 1 (60Hz)"),
-            ("Band 2 (230Hz)", "Front EQ Band 2 (230Hz)"),
-            ("Band 3 (910Hz)", "Front EQ Band 3 (910Hz)"),
-            ("Band 4 (3.6kHz)", "Front EQ Band 4 (3.6kHz)"),
-            ("Band 5 (14kHz)", "Front EQ Band 5 (14kHz)")
+            ("EQ Band 1", "EQ Band 1"),
+            ("EQ Band 2", "EQ Band 2"),
+            ("EQ Band 3", "EQ Band 3"),
+            ("EQ Band 4", "EQ Band 4"),
+            ("EQ Band 5", "EQ Band 5")
         ]
 
         self.eq_sliders = []
         for label, entity in bands:
-            ctk.CTkLabel(eq_frame, text=label, font=("Roboto", 12)).pack(pady=(5, 0))
-            slider = ctk.CTkSlider(eq_frame, from_=-10, to=10, number_of_steps=20, button_color="#2ecc71", button_hover_color="#27ae60", command=lambda val, e=entity: self.send_dsp_value(e, val))
-            slider.set(0)
+            ctk.CTkLabel(eq_frame, text=label + " (0-20)", font=("Roboto", 12)).pack(pady=(5, 0))
+            slider = ctk.CTkSlider(eq_frame, from_=0, to=20, number_of_steps=20, button_color="#f1c40f", button_hover_color="#f39c12", command=lambda val, e=entity: self.send_number_value(e, val))
             slider.pack(fill="x", pady=(0, 5))
             self.eq_sliders.append(slider)
 
     def send_action(self, endpoint):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
         if not ip: return
+        import threading
         threading.Thread(target=lambda: self.session.post(f"http://{ip}/{endpoint}", timeout=2), daemon=True).start()
 
-    def send_volume(self, value):
+    def send_number_value(self, entity_name, value):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
         if not ip: return
-        # Nutze den exakten Entity Name mit URL-Encoding statt Objekt-ID
-        encoded_name = urllib.parse.quote("Bluetooth Lautstärke")
+        import urllib.parse
+        encoded_name = urllib.parse.quote(entity_name)
+        import threading
         threading.Thread(target=lambda: self.session.post(f"http://{ip}/number/{encoded_name}/set?value={int(value)}", timeout=2), daemon=True).start()
 
-    def send_dsp_value(self, entity_name, value):
+    def send_select_value(self, entity_name, value):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
         if not ip: return
+        import urllib.parse
         encoded_name = urllib.parse.quote(entity_name)
-        threading.Thread(target=lambda: self.session.post(f"http://{ip}/number/{encoded_name}/set?value={int(value)}", timeout=2), daemon=True).start()
+        encoded_val = urllib.parse.quote(value)
+        import threading
+        threading.Thread(target=lambda: self.session.post(f"http://{ip}/select/{encoded_name}/set?option={encoded_val}", timeout=2), daemon=True).start()
 
     # --- LOGIK FUNKTIONEN ---
     def add_device_to_ui(self, name, ip):
@@ -586,21 +613,22 @@ class InsaneFlasher(ctk.CTk):
             except: return "Offline"
 
         # Daten abrufen (Exakte Namen aus dem YAML anstelle von Objekt-IDs)
-        src = get_state("text_sensor", "Active Audio Source")
+        src = get_state("select", "Input Source")
         sys_status = get_state("text_sensor", "Insane System Status")
-        t_amp = get_state("sensor", "Amp Temp (UART)")
-        t_esp = get_state("sensor", "ESP Ambient Temperature")
-        t_dsp = get_state("sensor", "RP2354 Temp (UART)")
+        t_esp = get_state("sensor", "Master Temperature")
+        t_dsp = get_state("sensor", "DSP Temperature")
         bl_stat = get_state("text_sensor", "Stream Status")
         bl_song = get_state("text_sensor", "Bluetooth Track")
         bl_art = get_state("text_sensor", "Bluetooth Artist")
-        fan = get_state("sensor", "Fan Speed")
-        fault = get_state("binary_sensor", "Amp Fault")
+        fault = get_state("binary_sensor", "Verstärker Überlastung (Fault)")
         wifi = get_state("sensor", "WLAN Signal")
         btrx_version = get_state("text_sensor", "BT Version")
         subtx_version = get_state("text_sensor", "SUB Version")
         rp_version = get_state("text_sensor", "DSP Version")
         bt_conn = get_state("binary_sensor", "bluetooth_connected")
+        sub_conn = get_state("text_sensor", "subwoofer_connected") # Fallback to text_sensor or we can try to figure it out from versions/ping?
+        # Wait, the YAML has `id(isb_orchestrator_inst).is_sub_connected()` but doesn't expose it. We can try fetching "SUB Version" - if it's there, sub is connected.
+        # Actually I will just pass subtx_version downstream.
 
         import time
         current_time = time.time()
@@ -617,12 +645,13 @@ class InsaneFlasher(ctk.CTk):
             except:
                 self.online_version = None
 
-        self.after(0, self._update_dashboard_ui, src, sys_status, t_amp, t_esp, t_dsp, bl_stat, bl_song, bl_art, fan, fault, wifi, bt_conn)
+        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, bl_stat, bl_song, bl_art, fault, wifi, bt_conn, subtx_version)
         self.after(0, lambda: self.check_for_updates(btrx_version, subtx_version, rp_version))
 
-    def _update_dashboard_ui(self, src, sys_status, t_amp, t_esp, t_dsp, bl_stat, bl_song, bl_art, fan, fault, wifi, bt_conn):
+    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, bl_stat, bl_song, bl_art, fault, wifi, bt_conn, subtx_version):
         def set_val(lbl, text, color="#ffffff"):
-            lbl.configure(text=str(text), text_color=color)
+            if lbl != self.val_dummy:
+                lbl.configure(text=str(text), text_color=color)
 
         is_online = src != "Offline" and wifi != "Offline"
 
@@ -632,7 +661,7 @@ class InsaneFlasher(ctk.CTk):
             self.status_dot.configure(text_color="#e74c3c")
 
         set_val(self.val_src, src, "#2ecc71" if "WLAN" in src else "#3498db")
-        set_val(self.val_sys, sys_status.upper(), "#2ecc71" if sys_status == "ok" else "#e74c3c")
+        set_val(self.val_sys, sys_status.upper() if sys_status != "Offline" else "N/A", "#2ecc71" if sys_status == "ok" else "#e74c3c")
         set_val(self.val_wifi, f"{wifi} dBm" if wifi != "Offline" else wifi)
 
         def parse_temp(val):
@@ -648,7 +677,6 @@ class InsaneFlasher(ctk.CTk):
             elif temp_val >= 45: pbar.configure(progress_color="#f39c12")
             else: pbar.configure(progress_color="#2ecc71")
 
-        update_temp_ui(self.val_temp_amp, *parse_temp(t_amp))
         update_temp_ui(self.val_temp_esp, *parse_temp(t_esp))
         update_temp_ui(self.val_temp_dsp, *parse_temp(t_dsp))
 
@@ -656,9 +684,12 @@ class InsaneFlasher(ctk.CTk):
         set_val(self.val_bl_song, bl_song)
         set_val(self.val_bl_art, bl_art)
 
-        set_val(self.val_fan, f"{fan}%" if fan != "Offline" else fan, "#3498db" if fan != "0" else "#888888")
         set_val(self.val_amp_stat, "FAULT" if fault == "ON" else "OK", "#e74c3c" if fault == "ON" else "#2ecc71")
         set_val(self.val_bl_conn, "VERBUNDEN" if bt_conn == "ON" else "GETRENNT", "#3498db" if bt_conn == "ON" else "#888888")
+
+        is_sub_conn = subtx_version != "Offline" and subtx_version != "N/A"
+        set_val(self.val_sub_conn, "VERBUNDEN" if is_sub_conn else "GETRENNT", "#e67e22" if is_sub_conn else "#888888")
+
 
         self.is_fetching = False
 
