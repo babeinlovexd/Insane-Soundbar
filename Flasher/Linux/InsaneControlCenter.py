@@ -92,7 +92,7 @@ class InsaneControlCenter(ctk.CTk):
         # 1. FENSTER-SETUP
         self.title("Insane Control Center")
         self.geometry("800x700")
-        self.configure(fg_color="#1a1a1a")
+        self.configure(fg_color="#0d1117")
 
         try:
             icon_p = resource_path("logo.ico")
@@ -124,41 +124,41 @@ class InsaneControlCenter(ctk.CTk):
             self.logo_label = ctk.CTkLabel(self.header_frame, image=logo_image, text="")
             self.logo_label.grid(row=0, column=0, rowspan=2, padx=(0, 20))
         except:
-            self.logo_label = ctk.CTkLabel(self.header_frame, text="ISS", font=("Roboto", 40, "bold"), text_color="#3b8ed0", width=80)
+            self.logo_label = ctk.CTkLabel(self.header_frame, text="ISS", font=("Roboto", 40, "bold"), text_color="#2f81f7", width=80)
             self.logo_label.grid(row=0, column=0, rowspan=2, padx=(0, 20))
 
-        self.title_label = ctk.CTkLabel(self.header_frame, text="Insane Control Center", font=("Roboto", 26, "bold"), text_color="#ffffff")
+        self.title_label = ctk.CTkLabel(self.header_frame, text="Insane Control Center", font=("Roboto", 26, "bold"), text_color="#c9d1d9")
         self.title_label.grid(row=0, column=1, sticky="sw")
 
         # --- STATUS PUNKT (NEBEN DEM TITEL) ---
         self.status_dot = ctk.CTkLabel(self.header_frame, text="●", font=("Roboto", 20), text_color="#444444")
         self.status_dot.grid(row=0, column=2, padx=(10, 0), sticky="sw")
 
-        self.author_link = ctk.CTkLabel(self.header_frame, text="by BabeinlovexD ", font=("Roboto", 14, "italic"), text_color="#3b8ed0", cursor="hand2")
+        self.author_link = ctk.CTkLabel(self.header_frame, text="by BabeinlovexD ", font=("Roboto", 14, "italic"), text_color="#2f81f7", cursor="hand2")
         self.author_link.grid(row=1, column=1, sticky="nw")
         self.author_link.bind("<Button-1>", lambda e: webbrowser.open(GITHUB_AUTHOR_URL))
 
         self.main_area = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_area.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        self.main_area.pack(fill="both", expand=True, padx=20, pady=(0, 10))
 
         # ---------------------------------------------------------
         # SYSTEM AUSWAHL (Immer sichtbar)
         # ---------------------------------------------------------
-        self.dev_ctrl_frame = ctk.CTkFrame(self.main_area, fg_color="#242424", corner_radius=10)
-        self.dev_ctrl_frame.pack(pady=(0, 10), fill="x")
+        self.dev_ctrl_frame = ctk.CTkFrame(self.header_frame, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
+        self.dev_ctrl_frame.grid(row=2, column=0, columnspan=3, pady=(20, 0), sticky="ew")
 
         inner_ctrl = ctk.CTkFrame(self.dev_ctrl_frame, fg_color="transparent")
         inner_ctrl.pack(pady=10, padx=20, fill="x")
 
         self.device_dropdown = ctk.CTkOptionMenu(inner_ctrl, values=["Suche läuft..."], state="disabled", height=35,
-                                                fg_color="#1a1a1a", button_color="#333333", button_hover_color="#444444", command=self.on_device_select)
+                                                fg_color="#0d1117", button_color="#21262d", button_hover_color="#30363d", command=self.on_device_select)
         self.device_dropdown.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
         # 1. Favoriten Button (Outline-Style mit Text)
         self.fav_btn = ctk.CTkButton(
             inner_ctrl, text="⭐ Merken", width=95, height=32,
             fg_color="transparent", border_width=1, border_color="#f1c40f",
-            hover_color="#333333", text_color="#f1c40f", font=("Roboto", 13, "bold"),
+            hover_color="#333333", text_color="#e3b341", font=("Roboto", 13, "bold"),
             command=self.save_favorite
         )
         self.fav_btn.pack(side="left", padx=(0, 5))
@@ -174,7 +174,7 @@ class InsaneControlCenter(ctk.CTk):
         self.restart_btn = ctk.CTkButton(
             inner_ctrl, text="⚡ System Reset", width=120, height=32,
             fg_color="transparent", border_width=1, border_color="#e67e22",
-            hover_color="#333333", text_color="#e67e22", font=("Roboto", 13, "bold"),
+            hover_color="#333333", text_color="#d29922", font=("Roboto", 13, "bold"),
             command=self.restart_bluetooth
         )
         self.restart_btn.pack(side="left", padx=(0, 5))
@@ -182,7 +182,7 @@ class InsaneControlCenter(ctk.CTk):
         # ---------------------------------------------------------
         # TABS EINRICHTEN
         # ---------------------------------------------------------
-        self.tabview = ctk.CTkTabview(self.main_area, segmented_button_selected_color="#3b8ed0")
+        self.tabview = ctk.CTkTabview(self.main_area, segmented_button_selected_color="#2f81f7", segmented_button_fg_color="#161b22", segmented_button_unselected_color="#161b22", segmented_button_unselected_hover_color="#30363d", fg_color="transparent")
         self.tabview.pack(fill="both", expand=True)
 
         self.tab_ctrl = self.tabview.add(" 🕹️ Steuerung ")
@@ -213,24 +213,24 @@ class InsaneControlCenter(ctk.CTk):
         self.start_scan()
 
     def setup_tab_tele(self):
-        self.info_grid = ctk.CTkFrame(self.tab_tele, fg_color="#1a1a1a", corner_radius=10)
+        self.info_grid = ctk.CTkFrame(self.tab_tele, fg_color="#0d1117", corner_radius=10)
         self.info_grid.pack(pady=15, padx=20, fill="both", expand=True)
         self.info_grid.columnconfigure((0, 1, 2), weight=1)
 
         def create_stat(row, col, label_text, is_temp=False):
-            lbl = ctk.CTkLabel(self.info_grid, text=label_text, font=("Roboto", 11, "bold"), text_color="#888888")
+            lbl = ctk.CTkLabel(self.info_grid, text=label_text, font=("Roboto", 11, "bold"), text_color="#8b949e")
             lbl.grid(row=row*2, column=col, sticky="w", padx=15, pady=(10, 0))
             if is_temp:
                 container = ctk.CTkFrame(self.info_grid, fg_color="transparent")
                 container.grid(row=row*2+1, column=col, sticky="ew", padx=15, pady=(0, 10))
-                val = ctk.CTkLabel(container, text="-", font=("Roboto", 14, "bold"), text_color="#ffffff")
+                val = ctk.CTkLabel(container, text="-", font=("Roboto", 14, "bold"), text_color="#c9d1d9")
                 val.pack(anchor="w")
-                bar = ctk.CTkProgressBar(container, height=6, fg_color="#333333")
+                bar = ctk.CTkProgressBar(container, height=6, fg_color="#21262d")
                 bar.set(0)
                 bar.pack(fill="x", pady=(4, 0))
                 return val, bar
             else:
-                val = ctk.CTkLabel(self.info_grid, text="-", font=("Roboto", 14, "bold"), text_color="#ffffff")
+                val = ctk.CTkLabel(self.info_grid, text="-", font=("Roboto", 14, "bold"), text_color="#c9d1d9")
                 val.grid(row=row*2+1, column=col, sticky="w", padx=15, pady=(0, 10))
                 return val
 
@@ -252,17 +252,17 @@ class InsaneControlCenter(ctk.CTk):
         self.upd_scroll.pack(fill="both", expand=True)
 
         # Bluetooth / BT_RX (ESP32)
-        self.sec_btrx = ctk.CTkFrame(self.upd_scroll, fg_color="#242424", corner_radius=10)
+        self.sec_btrx = ctk.CTkFrame(self.upd_scroll, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
         self.sec_btrx.pack(pady=10, padx=20, fill="x")
 
         btrx_top = ctk.CTkFrame(self.sec_btrx, fg_color="transparent")
         btrx_top.pack(fill="x", padx=15, pady=10)
-        ctk.CTkLabel(btrx_top, text="ESP32 (BT_RX / BLUETOOTH)", font=("Roboto", 14, "bold"), text_color="#3b8ed0").pack(side="left")
+        ctk.CTkLabel(btrx_top, text="ESP32 (BT_RX / BLUETOOTH)", font=("Roboto", 14, "bold"), text_color="#2f81f7").pack(side="left")
 
         self.btrx_fw_label = ctk.CTkLabel(self.sec_btrx, text="Aktuelle Version: [N/A]", font=("Roboto", 13))
         self.btrx_fw_label.pack(pady=5)
 
-        self.btrx_status = ctk.CTkLabel(self.sec_btrx, text="Bereit.", font=("Roboto", 12), text_color="#888888")
+        self.btrx_status = ctk.CTkLabel(self.sec_btrx, text="Bereit.", font=("Roboto", 12), text_color="#8b949e")
         self.btrx_status.pack(pady=(0, 10))
 
         self.btrx_flash_btn = ctk.CTkButton(
@@ -272,17 +272,17 @@ class InsaneControlCenter(ctk.CTk):
         self.btrx_flash_btn.pack(pady=(0, 15), padx=20, fill="x")
 
         # Subwoofer / SUB_TX (ESP32)
-        self.sec_subtx = ctk.CTkFrame(self.upd_scroll, fg_color="#242424", corner_radius=10)
+        self.sec_subtx = ctk.CTkFrame(self.upd_scroll, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
         self.sec_subtx.pack(pady=10, padx=20, fill="x")
 
         subtx_top = ctk.CTkFrame(self.sec_subtx, fg_color="transparent")
         subtx_top.pack(fill="x", padx=15, pady=10)
-        ctk.CTkLabel(subtx_top, text="ESP32 (SUB_TX / SUBWOOFER)", font=("Roboto", 14, "bold"), text_color="#2ecc71").pack(side="left")
+        ctk.CTkLabel(subtx_top, text="ESP32 (SUB_TX / SUBWOOFER)", font=("Roboto", 14, "bold"), text_color="#3fb950").pack(side="left")
 
         self.subtx_fw_label = ctk.CTkLabel(self.sec_subtx, text="Aktuelle Version: [N/A]", font=("Roboto", 13))
         self.subtx_fw_label.pack(pady=5)
 
-        self.subtx_status = ctk.CTkLabel(self.sec_subtx, text="Bereit.", font=("Roboto", 12), text_color="#888888")
+        self.subtx_status = ctk.CTkLabel(self.sec_subtx, text="Bereit.", font=("Roboto", 12), text_color="#8b949e")
         self.subtx_status.pack(pady=(0, 10))
 
         self.subtx_flash_btn = ctk.CTkButton(
@@ -292,18 +292,18 @@ class InsaneControlCenter(ctk.CTk):
         self.subtx_flash_btn.pack(pady=(0, 15), padx=20, fill="x")
 
         # DSP (RP2354)
-        self.sec_rp = ctk.CTkFrame(self.upd_scroll, fg_color="#242424", corner_radius=10)
+        self.sec_rp = ctk.CTkFrame(self.upd_scroll, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
         self.sec_rp.pack(pady=10, padx=20, fill="x")
 
 
         rp_top = ctk.CTkFrame(self.sec_rp, fg_color="transparent")
         rp_top.pack(fill="x", padx=15, pady=10)
-        ctk.CTkLabel(rp_top, text="RP2354A (DSP)", font=("Roboto", 14, "bold"), text_color="#e67e22").pack(side="left")
+        ctk.CTkLabel(rp_top, text="RP2354A (DSP)", font=("Roboto", 14, "bold"), text_color="#d29922").pack(side="left")
 
         self.rp_fw_label = ctk.CTkLabel(self.sec_rp, text="Aktuelle Version: [N/A]", font=("Roboto", 13))
         self.rp_fw_label.pack(pady=5)
 
-        self.rp_status = ctk.CTkLabel(self.sec_rp, text="Bereit.", font=("Roboto", 12), text_color="#888888")
+        self.rp_status = ctk.CTkLabel(self.sec_rp, text="Bereit.", font=("Roboto", 12), text_color="#8b949e")
         self.rp_status.pack(pady=(0, 10))
 
         self.rp_flash_btn = ctk.CTkButton(
@@ -313,11 +313,11 @@ class InsaneControlCenter(ctk.CTk):
         self.rp_flash_btn.pack(pady=(0, 15), padx=20, fill="x")
 
         # Globaler Fortschrittsbalken für Flash Vorgänge (Initial unsichtbar)
-        self.flash_progress = ctk.CTkProgressBar(self.upd_scroll, height=15, fg_color="#333333", progress_color="#3b8ed0")
+        self.flash_progress = ctk.CTkProgressBar(self.upd_scroll, height=15, fg_color="#21262d", progress_color="#3b8ed0")
         self.flash_progress.set(0)
 
     def setup_tab_log(self):
-        self.log_box = ctk.CTkTextbox(self.tab_log, width=700, height=400, font=("Consolas", 12), state="disabled", fg_color="#1a1a1a")
+        self.log_box = ctk.CTkTextbox(self.tab_log, width=700, height=400, font=("Consolas", 12), state="disabled", fg_color="#0d1117")
         self.log_box.pack(pady=20, padx=20, fill="both", expand=True)
 
     def log(self, msg):
@@ -370,20 +370,20 @@ class InsaneControlCenter(ctk.CTk):
         except: pass
 
         ctk.CTkLabel(info_frame, text="Insane Control Center", font=("Roboto", 24, "bold")).pack(pady=10)
-        ctk.CTkLabel(info_frame, text="Version 1.0.0", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
+        ctk.CTkLabel(info_frame, text="Version 1.0.0", font=("Roboto", 14), text_color="#8b949e", justify="center").pack(pady=5)
 
 
-        btn = ctk.CTkButton(info_frame, text="GitHub Repository", fg_color="#333333", height=40, command=lambda: webbrowser.open(GITHUB_URL))
+        btn = ctk.CTkButton(info_frame, text="GitHub Repository", fg_color="#21262d", height=40, command=lambda: webbrowser.open(GITHUB_URL))
         btn.pack(pady=20)
 
         tools_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
         tools_frame.pack(pady=10)
         ctk.CTkLabel(tools_frame, text="Powered by Open Source Tools:", font=("Roboto", 12, "bold")).pack(pady=5)
 
-        btn_esptool = ctk.CTkButton(tools_frame, text="esptool.py", fg_color="transparent", text_color="#3b8ed0", hover_color="#242424", command=lambda: webbrowser.open("https://github.com/espressif/esptool"))
+        btn_esptool = ctk.CTkButton(tools_frame, text="esptool.py", fg_color="transparent", text_color="#2f81f7", hover_color="#30363d", command=lambda: webbrowser.open("https://github.com/espressif/esptool"))
         btn_esptool.pack()
 
-        btn_ctk = ctk.CTkButton(tools_frame, text="CustomTkinter", fg_color="transparent", text_color="#3b8ed0", hover_color="#242424", command=lambda: webbrowser.open("https://customtkinter.tomschimansky.com/"))
+        btn_ctk = ctk.CTkButton(tools_frame, text="CustomTkinter", fg_color="transparent", text_color="#2f81f7", hover_color="#30363d", command=lambda: webbrowser.open("https://customtkinter.tomschimansky.com/"))
         btn_ctk.pack()
 
     def setup_tab_ctrl(self):
@@ -391,7 +391,7 @@ class InsaneControlCenter(ctk.CTk):
         scroll_frame.pack(fill="both", expand=True)
 
         # --- SYSTEM STEUERUNG ---
-        ctk.CTkLabel(scroll_frame, text="System", font=("Roboto", 20, "bold"), text_color="#3b8ed0").pack(pady=(10, 10))
+        ctk.CTkLabel(scroll_frame, text="System", font=("Roboto", 20, "bold"), text_color="#2f81f7").pack(pady=(10, 10))
 
         sys_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         sys_frame.pack(pady=5, fill="x", padx=40)
@@ -447,7 +447,7 @@ class InsaneControlCenter(ctk.CTk):
             return slider
 
         # --- VOLUME & BRIGHTNESS ---
-        ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#2ecc71").pack(pady=(20, 10))
+        ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#3fb950").pack(pady=(20, 10))
         gen_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         gen_frame.pack(pady=5, fill="x", padx=40)
 
@@ -455,7 +455,7 @@ class InsaneControlCenter(ctk.CTk):
         self.bright_slider = create_live_slider(gen_frame, "OLED Brightness (0-100)", 0, 100, 100, "OLED Brightness", "#3498db", "#2980b9", 100)
 
         # --- CROSSOVERS ---
-        ctk.CTkLabel(scroll_frame, text="Frequenzweichen (Crossovers)", font=("Roboto", 18, "bold"), text_color="#e67e22").pack(pady=(20, 10))
+        ctk.CTkLabel(scroll_frame, text="Frequenzweichen (Crossovers)", font=("Roboto", 18, "bold"), text_color="#d29922").pack(pady=(20, 10))
         cross_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         cross_frame.pack(pady=5, fill="x", padx=40)
 
@@ -465,7 +465,7 @@ class InsaneControlCenter(ctk.CTk):
         self.high_hp = create_live_slider(cross_frame, "High HP Crossover", 500, 10000, 95, "High HP Crossover", "#e67e22", "#d35400", 3500)
 
         # --- EQ ---
-        ctk.CTkLabel(scroll_frame, text="Equalizer", font=("Roboto", 18, "bold"), text_color="#f1c40f").pack(pady=(20, 10))
+        ctk.CTkLabel(scroll_frame, text="Equalizer", font=("Roboto", 18, "bold"), text_color="#e3b341").pack(pady=(20, 10))
         eq_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         eq_frame.pack(pady=5, fill="x", padx=40)
 
@@ -683,7 +683,7 @@ class InsaneControlCenter(ctk.CTk):
         is_online = src != "Offline" and wifi != "Offline"
 
         if is_online:
-            self.status_dot.configure(text_color="#2ecc71")
+            self.status_dot.configure(text_color="#3fb950")
         else:
             self.status_dot.configure(text_color="#e74c3c")
 
@@ -878,7 +878,7 @@ class InsaneControlCenter(ctk.CTk):
                 encoded_btn = urllib.parse.quote("Normal Boot: DSP (RP2354)")
                 self.session.post(f"http://{ip}/button/{encoded_btn}/press", timeout=5)
 
-            self.after(0, lambda: status_lbl.configure(text="🚀 Update 100% erfolgreich!", text_color="#2ecc71"))
+            self.after(0, lambda: status_lbl.configure(text="🚀 Update 100% erfolgreich!", text_color="#3fb950"))
             self.after(0, lambda: messagebox.showinfo("Update", f"{target.upper()} wurde erfolgreich aktualisiert!"))
 
         except (requests.exceptions.RequestException, socket.error) as e:
@@ -896,19 +896,19 @@ class InsaneControlCenter(ctk.CTk):
 
     def check_for_updates(self, btrx_version, subtx_version, rp_version):
         if btrx_version == "N/A" or btrx_version == "Offline":
-            self.btrx_fw_label.configure(text="Aktuelle Version: Offline", text_color="#888888")
+            self.btrx_fw_label.configure(text="Aktuelle Version: Offline", text_color="#8b949e")
         else:
-            self.btrx_fw_label.configure(text=f"Aktuelle Version: [{btrx_version}]", text_color="#ffffff")
+            self.btrx_fw_label.configure(text=f"Aktuelle Version: [{btrx_version}]", text_color="#c9d1d9")
 
         if subtx_version == "N/A" or subtx_version == "Offline":
-            self.subtx_fw_label.configure(text="Aktuelle Version: Offline", text_color="#888888")
+            self.subtx_fw_label.configure(text="Aktuelle Version: Offline", text_color="#8b949e")
         else:
-            self.subtx_fw_label.configure(text=f"Aktuelle Version: [{subtx_version}]", text_color="#ffffff")
+            self.subtx_fw_label.configure(text=f"Aktuelle Version: [{subtx_version}]", text_color="#c9d1d9")
 
         if rp_version == "N/A" or rp_version == "Offline":
-            self.rp_fw_label.configure(text="Aktuelle Version: Offline", text_color="#888888")
+            self.rp_fw_label.configure(text="Aktuelle Version: Offline", text_color="#8b949e")
         else:
-            self.rp_fw_label.configure(text=f"Aktuelle Version: [{rp_version}]", text_color="#ffffff")
+            self.rp_fw_label.configure(text=f"Aktuelle Version: [{rp_version}]", text_color="#c9d1d9")
 
         if self.online_version:
             if btrx_version != self.online_version and btrx_version != "Offline":
