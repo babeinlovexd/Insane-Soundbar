@@ -52,7 +52,8 @@ ctk.set_default_color_theme("blue")
 
 # Default URLs; dynamically resolved via GitHub API where possible.
 GITHUB_API_LATEST = "https://api.github.com/repos/babeinlovexd/Insane-Sound-System/releases/latest"
-GITHUB_URL = "https://github.com/babeinlovexd/Insane-Sound-System"
+GITHUB_URL = "https://github.com/babeinlovexd/Insane-Soundbar"
+GITHUB_AUTHOR_URL = "https://github.com/babeinlovexd"
 UPDATE_CHECK_INTERVAL = 3600 # Sekunden
 
 class DeviceListener:
@@ -135,7 +136,7 @@ class InsaneFlasher(ctk.CTk):
 
         self.author_link = ctk.CTkLabel(self.header_frame, text="by BabeinlovexD ", font=("Roboto", 14, "italic"), text_color="#3b8ed0", cursor="hand2")
         self.author_link.grid(row=1, column=1, sticky="nw")
-        self.author_link.bind("<Button-1>", lambda e: webbrowser.open(GITHUB_URL))
+        self.author_link.bind("<Button-1>", lambda e: webbrowser.open(GITHUB_AUTHOR_URL))
 
         self.main_area = ctk.CTkFrame(self, fg_color="transparent")
         self.main_area.pack(fill="both", expand=True, padx=20, pady=(0, 20))
@@ -199,7 +200,7 @@ class InsaneFlasher(ctk.CTk):
         # --- FOOTER ---
         self.footer_label = ctk.CTkLabel(
             self,
-            text="© 2026 BabeinlovexD | Triple-Brain Architecture Hub",
+            text="© 2026 BabeinlovexD",
             font=("Roboto", 10),
             text_color="#555555"
         )
@@ -369,10 +370,21 @@ class InsaneFlasher(ctk.CTk):
         except: pass
 
         ctk.CTkLabel(info_frame, text="Insane Control Center", font=("Roboto", 24, "bold")).pack(pady=10)
-        ctk.CTkLabel(info_frame, text="Version 2.2.0\nTriple-Brain Architecture Hub", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
+        ctk.CTkLabel(info_frame, text="Version 2.2.0", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
+
 
         btn = ctk.CTkButton(info_frame, text="GitHub Repository", fg_color="#333333", height=40, command=lambda: webbrowser.open(GITHUB_URL))
         btn.pack(pady=20)
+
+        tools_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
+        tools_frame.pack(pady=10)
+        ctk.CTkLabel(tools_frame, text="Powered by Open Source Tools:", font=("Roboto", 12, "bold")).pack(pady=5)
+
+        btn_esptool = ctk.CTkButton(tools_frame, text="esptool.py", fg_color="transparent", text_color="#3b8ed0", hover_color="#242424", command=lambda: webbrowser.open("https://github.com/espressif/esptool"))
+        btn_esptool.pack()
+
+        btn_ctk = ctk.CTkButton(tools_frame, text="CustomTkinter", fg_color="transparent", text_color="#3b8ed0", hover_color="#242424", command=lambda: webbrowser.open("https://customtkinter.tomschimansky.com/"))
+        btn_ctk.pack()
 
     def setup_tab_ctrl(self):
         scroll_frame = ctk.CTkScrollableFrame(self.tab_ctrl, fg_color="transparent")
@@ -387,6 +399,9 @@ class InsaneFlasher(ctk.CTk):
         ctk.CTkLabel(sys_frame, text="Input Source", font=("Roboto", 14)).pack(pady=(0, 5))
         self.input_dropdown = ctk.CTkOptionMenu(sys_frame, values=["Toslink", "Aux", "Bluetooth", "WLAN"], command=lambda val: self.send_select_value("Input Source", val))
         self.input_dropdown.pack(fill="x", pady=(0, 15))
+        ctk.CTkLabel(sys_frame, text="IR Learn Target", font=("Roboto", 14)).pack(pady=(0, 5))
+        self.ir_dropdown = ctk.CTkOptionMenu(sys_frame, values=["None", "Vol+", "Vol-", "Mute", "Input Next"], command=lambda val: self.send_select_value("IR Learn Target", val))
+        self.ir_dropdown.pack(fill="x", pady=(0, 15))
 
         btn_row = ctk.CTkFrame(sys_frame, fg_color="transparent")
         btn_row.pack(pady=10)
@@ -396,6 +411,9 @@ class InsaneFlasher(ctk.CTk):
 
         encoded_clear_ir = __import__('urllib').parse.quote("Alle IR-Codes löschen")
         ctk.CTkButton(btn_row, text="🗑 Clear IR", width=140, height=45, corner_radius=20, fg_color="#c0392b", hover_color="#922b21", command=lambda: self.send_action(f"button/{encoded_clear_ir}/press")).pack(side="left", padx=15)
+
+        encoded_learn = __import__('urllib').parse.quote("Start IR Learn")
+        ctk.CTkButton(btn_row, text="🎯 IR Learn", width=140, height=45, corner_radius=20, fg_color="#3498db", hover_color="#2980b9", command=lambda: self.send_action(f"button/{encoded_learn}/press")).pack(side="left", padx=15)
 
         # Helper to create slider with live value label
         def create_live_slider(parent, title, from_val, to_val, steps, entity_name, color, hover, init_val=None):
