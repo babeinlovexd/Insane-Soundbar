@@ -185,11 +185,11 @@ class InsaneControlCenter(ctk.CTk):
         self.tabview = ctk.CTkTabview(self.main_area, segmented_button_selected_color="#3b8ed0")
         self.tabview.pack(fill="both", expand=True)
 
-        self.tab_ctrl = self.tabview.add("🕹️Steuerung")
-        self.tab_tele = self.tabview.add("📊Telemetrie")
-        self.tab_upd = self.tabview.add("⚡Updates")
-        self.tab_log = self.tabview.add("📝Log")
-        self.tab_info = self.tabview.add("ℹ️Credits & Links")
+        self.tab_ctrl = self.tabview.add(" 🕹️ Steuerung ")
+        self.tab_tele = self.tabview.add(" 📊 Telemetrie ")
+        self.tab_upd = self.tabview.add(" ⚡ Updates ")
+        self.tab_log = self.tabview.add(" 📝 Log ")
+        self.tab_info = self.tabview.add(" ℹ️ Credits & Links ")
 
         self.setup_tab_ctrl()
         self.setup_tab_tele()
@@ -234,12 +234,12 @@ class InsaneControlCenter(ctk.CTk):
                 val.grid(row=row*2+1, column=col, sticky="w", padx=15, pady=(0, 10))
                 return val
 
-        self.val_src = create_stat(0, 0, "AUDIO QUELLE")
-        self.val_sys = create_stat(0, 1, "SYSTEM STATUS")
+        self.val_src = create_stat(0, 0, "ACTIVE INPUT")
+        self.val_sys = create_stat(0, 1, "SOUNDBAR STATUS")
         self.val_wifi = create_stat(0, 2, "WLAN SIGNAL")
 
-        self.val_temp_esp = create_stat(1, 0, "TEMP MASTER ESP", is_temp=True)
-        self.val_temp_dsp = create_stat(1, 1, "TEMP DSP", is_temp=True)
+        self.val_temp_esp = create_stat(1, 0, "MASTER TEMP", is_temp=True)
+        self.val_temp_dsp = create_stat(1, 1, "DSP TEMP", is_temp=True)
         self.val_amp_stat = create_stat(1, 2, "AMP FAULT")
 
         self.val_sub_conn = create_stat(2, 0, "SUB CONN")
@@ -370,7 +370,7 @@ class InsaneControlCenter(ctk.CTk):
         except: pass
 
         ctk.CTkLabel(info_frame, text="Insane Control Center", font=("Roboto", 24, "bold")).pack(pady=10)
-        ctk.CTkLabel(info_frame, text="Version 2.2.0", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
+        ctk.CTkLabel(info_frame, text="Version 1.0.0", font=("Roboto", 14), text_color="#aaaaaa", justify="center").pack(pady=5)
 
 
         btn = ctk.CTkButton(info_frame, text="GitHub Repository", fg_color="#333333", height=40, command=lambda: webbrowser.open(GITHUB_URL))
@@ -642,8 +642,8 @@ class InsaneControlCenter(ctk.CTk):
             except: return "Offline"
 
         # Daten abrufen (Exakte Namen aus dem YAML anstelle von Objekt-IDs)
-        src = get_state("select", "Input Source")
-        sys_status = get_state("text_sensor", "Insane System Status")
+        src = get_state("text_sensor", "Active Input")
+        sys_status = get_state("light", "Soundbar Status")
         t_esp = get_state("sensor", "Master Temperature")
         t_dsp = get_state("sensor", "DSP Temperature")
         fault = get_state("binary_sensor", "Verstärker Überlastung (Fault)")
@@ -651,8 +651,11 @@ class InsaneControlCenter(ctk.CTk):
         btrx_version = get_state("text_sensor", "BT Version")
         subtx_version = get_state("text_sensor", "SUB Version")
         rp_version = get_state("text_sensor", "DSP Version")
-        bt_conn = get_state("binary_sensor", "bluetooth_connected")
-        sub_conn = get_state("binary_sensor", "subwoofer_connected")
+        # For BT Conn and SUB Conn, they are inferred from version presence or specific binary_sensors if they exist
+        # We know "subwoofer_connected" might be a binary sensor from previous step, but let's check BT as well.
+        # Actually, if we don't know, we can fall back to checking if the version string is present!
+        bt_conn = get_state("text_sensor", "BT Version")
+        sub_conn = get_state("text_sensor", "SUB Version")
 
         import time
         current_time = time.time()
@@ -684,8 +687,8 @@ class InsaneControlCenter(ctk.CTk):
         else:
             self.status_dot.configure(text_color="#e74c3c")
 
-        set_val(self.val_src, src, "#2ecc71" if "WLAN" in src else "#3498db")
-        set_val(self.val_sys, sys_status.upper() if sys_status != "Offline" else "N/A", "#2ecc71" if sys_status == "ok" else "#e74c3c")
+        set_val(self.val_src, src, "#3498db")
+        set_val(self.val_sys, sys_status.upper() if sys_status != "Offline" else "N/A", "#2ecc71" if sys_status == "ON" else "#888888")
         set_val(self.val_wifi, f"{wifi} dBm" if wifi != "Offline" else wifi)
 
         def parse_temp(val):
@@ -704,12 +707,12 @@ class InsaneControlCenter(ctk.CTk):
         update_temp_ui(self.val_temp_esp, *parse_temp(t_esp))
         update_temp_ui(self.val_temp_dsp, *parse_temp(t_dsp))
 
-
-
         set_val(self.val_amp_stat, "FAULT" if fault == "ON" else "OK", "#e74c3c" if fault == "ON" else "#2ecc71")
-        set_val(self.val_bl_conn, "VERBUNDEN" if bt_conn == "ON" else "GETRENNT", "#3498db" if bt_conn == "ON" else "#888888")
 
-        is_sub_conn = sub_conn == "ON" or sub_conn == "Verbunden" or sub_conn == "True" or sub_conn == "true" or sub_conn == "1"
+        is_bt_conn = bt_conn != "Offline" and bt_conn != "N/A"
+        set_val(self.val_bl_conn, "VERBUNDEN" if is_bt_conn else "GETRENNT", "#3498db" if is_bt_conn else "#888888")
+
+        is_sub_conn = sub_conn != "Offline" and sub_conn != "N/A"
         set_val(self.val_sub_conn, "VERBUNDEN" if is_sub_conn else "GETRENNT", "#e67e22" if is_sub_conn else "#888888")
 
 
