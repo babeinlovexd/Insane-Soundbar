@@ -19,7 +19,7 @@ from zeroconf import ServiceBrowser, Zeroconf
 import ctypes
 
 try:
-    myappid = 'babeinlovexd.insaneflasher.v5'
+    myappid = 'babeinlovexd.insanecontrolcenter.v1'
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 except:
     pass
@@ -35,7 +35,7 @@ def resource_path(relative_path):
 def get_app_dir():
     # Holt sich den unsichtbaren AppData Ordner und erstellt das Insane-Verzeichnis
     base_dir = os.getenv('APPDATA') if os.name == 'nt' else os.path.expanduser('~')
-    app_dir = os.path.join(base_dir, "InsaneFlasher")
+    app_dir = os.path.join(base_dir, "InsaneControlCenter")
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
     return app_dir
@@ -85,7 +85,7 @@ class ConsoleRedirector(io.StringIO):
                     self.callback(line.strip())
             self.buffer = lines[-1]
 
-class InsaneFlasher(ctk.CTk):
+class InsaneControlCenter(ctk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -925,5 +925,5 @@ class InsaneFlasher(ctk.CTk):
 
 
 if __name__ == "__main__":
-    app = InsaneFlasher()
+    app = InsaneControlCenter()
     app.mainloop()
