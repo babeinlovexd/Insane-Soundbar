@@ -411,9 +411,16 @@ class InsaneFlasher(ctk.CTk):
             lbl_val = ctk.CTkLabel(top_bar, text=str(init_val if init_val is not None else from_val), font=("Roboto", 12, "bold"))
             lbl_val.pack(side="right")
 
+            # Store timer ID as an attribute of the slider object
+            timer_holder = {"id": None}
+
             def on_slider_change(val):
                 lbl_val.configure(text=str(int(val)))
-                self.send_number_value(entity_name, val)
+
+                if timer_holder["id"] is not None:
+                    self.after_cancel(timer_holder["id"])
+
+                timer_holder["id"] = self.after(200, lambda: self.send_number_value(entity_name, val))
 
             slider = ctk.CTkSlider(container, from_=from_val, to=to_val, number_of_steps=steps, button_color=color, button_hover_color=hover, command=on_slider_change)
             if init_val is not None:
@@ -627,7 +634,7 @@ class InsaneFlasher(ctk.CTk):
         subtx_version = get_state("text_sensor", "SUB Version")
         rp_version = get_state("text_sensor", "DSP Version")
         bt_conn = get_state("binary_sensor", "bluetooth_connected")
-        sub_conn = get_state("text_sensor", "subwoofer_connected")
+        sub_conn = get_state("binary_sensor", "subwoofer_connected")
 
         import time
         current_time = time.time()
@@ -644,10 +651,10 @@ class InsaneFlasher(ctk.CTk):
             except:
                 self.online_version = None
 
-        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, subtx_version)
+        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn)
         self.after(0, lambda: self.check_for_updates(btrx_version, subtx_version, rp_version))
 
-    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, subtx_version):
+    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn):
         def set_val(lbl, text, color="#ffffff"):
             if lbl != self.val_dummy:
                 lbl.configure(text=str(text), text_color=color)
@@ -684,7 +691,7 @@ class InsaneFlasher(ctk.CTk):
         set_val(self.val_amp_stat, "FAULT" if fault == "ON" else "OK", "#e74c3c" if fault == "ON" else "#2ecc71")
         set_val(self.val_bl_conn, "VERBUNDEN" if bt_conn == "ON" else "GETRENNT", "#3498db" if bt_conn == "ON" else "#888888")
 
-        is_sub_conn = subtx_version != "Offline" and subtx_version != "N/A"
+        is_sub_conn = sub_conn == "ON" or sub_conn == "Verbunden" or sub_conn == "True" or sub_conn == "true" or sub_conn == "1"
         set_val(self.val_sub_conn, "VERBUNDEN" if is_sub_conn else "GETRENNT", "#e67e22" if is_sub_conn else "#888888")
 
 
