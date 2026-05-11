@@ -75,7 +75,7 @@ logger:
 external_components:
   - source:
       type: local
-      path: components
+      path: ../../components
 
 # Enable web server for exposing sensors and versions to PC-Flasher-Tool
 web_server:
