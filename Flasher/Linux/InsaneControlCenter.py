@@ -188,12 +188,14 @@ class InsaneControlCenter(ctk.CTk):
         self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.tab_ctrl = self.tabview.add("Steuerung")
+        self.tab_dsp = self.tabview.add("DSP")
         self.tab_tele = self.tabview.add("Telemetrie")
         self.tab_upd = self.tabview.add("Updates")
         self.tab_log = self.tabview.add("Log")
         self.tab_info = self.tabview.add("Info")
 
         self.setup_tab_ctrl()
+        self.setup_tab_dsp()
         self.setup_tab_tele()
         self.setup_tab_upd()
         self.setup_tab_log()
@@ -388,6 +390,30 @@ class InsaneControlCenter(ctk.CTk):
         btn_ctk = ctk.CTkButton(tools_frame, text="CustomTkinter", fg_color="transparent", text_color="#2f81f7", hover_color="#30363d", command=lambda: webbrowser.open("https://customtkinter.tomschimansky.com/"))
         btn_ctk.pack()
 
+
+    def create_live_slider(self, parent, label_text, from_val, to_val, steps, entity_name, color, hover, init_val=None):
+        container = ctk.CTkFrame(parent, fg_color="transparent")
+        container.pack(fill="x", pady=5)
+
+        lbl_frame = ctk.CTkFrame(container, fg_color="transparent")
+        lbl_frame.pack(fill="x")
+        ctk.CTkLabel(lbl_frame, text=label_text, font=("Roboto", 12, "bold"), text_color="#c9d1d9").pack(side="left")
+        lbl_val = ctk.CTkLabel(lbl_frame, text=str(init_val) if init_val is not None else str(from_val), font=("Roboto", 12, "bold"), text_color="#c9d1d9")
+        lbl_val.pack(side="right")
+
+        timer_holder = {"id": None}
+
+        def on_slider_change(val):
+            lbl_val.configure(text=str(int(val)))
+            if timer_holder["id"] is not None:
+                self.after_cancel(timer_holder["id"])
+            timer_holder["id"] = self.after(200, lambda: self.send_number_value(entity_name, val))
+
+        slider = ctk.CTkSlider(container, from_=from_val, to=to_val, number_of_steps=steps, button_color=color, button_hover_color=hover, command=on_slider_change)
+        if init_val is not None:
+            slider.set(init_val)
+        slider.pack(fill="x", pady=(5, 0))
+        return slider
     def setup_tab_ctrl(self):
         scroll_frame = ctk.CTkScrollableFrame(self.tab_ctrl, fg_color="transparent")
         scroll_frame.pack(fill="both", expand=True)
@@ -418,60 +444,36 @@ class InsaneControlCenter(ctk.CTk):
         ctk.CTkButton(btn_row, text="🎯 IR Learn", width=140, height=45, corner_radius=20, fg_color="#3498db", hover_color="#2980b9", command=lambda: self.send_action(f"button/{encoded_learn}/press")).pack(side="left", padx=15)
 
         # Helper to create slider with live value label
-        def create_live_slider(parent, title, from_val, to_val, steps, entity_name, color, hover, init_val=None):
-            container = ctk.CTkFrame(parent, fg_color="transparent")
-            container.pack(fill="x", pady=(0, 15))
-
-            top_bar = ctk.CTkFrame(container, fg_color="transparent")
-            top_bar.pack(fill="x")
-
-            lbl_title = ctk.CTkLabel(top_bar, text=title, font=("Roboto", 12))
-            lbl_title.pack(side="left")
-
-            lbl_val = ctk.CTkLabel(top_bar, text=str(init_val if init_val is not None else from_val), font=("Roboto", 12, "bold"))
-            lbl_val.pack(side="right")
-
-            # Store timer ID as an attribute of the slider object
-            timer_holder = {"id": None}
-
-            def on_slider_change(val):
-                lbl_val.configure(text=str(int(val)))
-
-                if timer_holder["id"] is not None:
-                    self.after_cancel(timer_holder["id"])
-
-                timer_holder["id"] = self.after(200, lambda: self.send_number_value(entity_name, val))
-
-            slider = ctk.CTkSlider(container, from_=from_val, to=to_val, number_of_steps=steps, button_color=color, button_hover_color=hover, command=on_slider_change)
-            if init_val is not None:
-                slider.set(init_val)
-            slider.pack(fill="x", pady=(5, 0))
-            return slider
 
         # --- VOLUME & BRIGHTNESS ---
         ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#3fb950").pack(pady=(20, 10))
         gen_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         gen_frame.pack(pady=5, fill="x", padx=40)
 
-        self.vol_slider = create_live_slider(gen_frame, "Master Volume (0-100)", 0, 100, 100, "Master Volume", "#2ecc71", "#27ae60", 50)
-        self.bright_slider = create_live_slider(gen_frame, "OLED Brightness (0-100)", 0, 100, 100, "OLED Brightness", "#3498db", "#2980b9", 100)
+        self.vol_slider = self.create_live_slider(gen_frame, "Master Volume (0-100)", 0, 100, 100, "Master Volume", "#2ecc71", "#27ae60", 50)
+        self.bright_slider = self.create_live_slider(gen_frame, "OLED Brightness (0-100)", 0, 100, 100, "OLED Brightness", "#3498db", "#2980b9", 100)
+
+
+    def setup_tab_dsp(self):
+        scroll_frame = ctk.CTkScrollableFrame(self.tab_dsp, fg_color="transparent")
+        scroll_frame.pack(fill="both", expand=True)
 
         # --- CROSSOVERS ---
         ctk.CTkLabel(scroll_frame, text="Frequenzweichen (Crossovers)", font=("Roboto", 18, "bold"), text_color="#d29922").pack(pady=(20, 10))
         cross_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         cross_frame.pack(pady=5, fill="x", padx=40)
 
-        self.sub_lp = create_live_slider(cross_frame, "Sub LP Crossover", 50, 255, 205, "Sub LP Crossover", "#e67e22", "#d35400", 120)
-        self.sat_hp = create_live_slider(cross_frame, "Sat HP Crossover", 50, 255, 205, "Sat HP Crossover", "#e67e22", "#d35400", 95)
-        self.mid_lp = create_live_slider(cross_frame, "Mid LP Crossover", 500, 10000, 95, "Mid LP Crossover", "#e67e22", "#d35400", 3500)
-        self.high_hp = create_live_slider(cross_frame, "High HP Crossover", 500, 10000, 95, "High HP Crossover", "#e67e22", "#d35400", 3500)
+        self.sub_lp = self.create_live_slider(cross_frame, "Sub LP Crossover", 50, 255, 205, "Sub LP Crossover", "#e67e22", "#d35400", 120)
+        self.sat_hp = self.create_live_slider(cross_frame, "Sat HP Crossover", 50, 255, 205, "Sat HP Crossover", "#e67e22", "#d35400", 95)
+        self.mid_lp = self.create_live_slider(cross_frame, "Mid LP Crossover", 500, 10000, 95, "Mid LP Crossover", "#e67e22", "#d35400", 3500)
+        self.high_hp = self.create_live_slider(cross_frame, "High HP Crossover", 500, 10000, 95, "High HP Crossover", "#e67e22", "#d35400", 3500)
 
         # --- EQ ---
         ctk.CTkLabel(scroll_frame, text="Equalizer", font=("Roboto", 18, "bold"), text_color="#e3b341").pack(pady=(20, 10))
         eq_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         eq_frame.pack(pady=5, fill="x", padx=40)
 
-        self.sub_trim = create_live_slider(eq_frame, "Sub Trim", 0, 20, 20, "Sub Trim", "#f1c40f", "#f39c12", 10)
+        self.sub_trim = self.create_live_slider(eq_frame, "Sub Trim", 0, 20, 20, "Sub Trim", "#f1c40f", "#f39c12", 10)
 
         bands = [
             ("EQ Band 1 (60Hz)", "EQ Band 1"),
@@ -483,7 +485,7 @@ class InsaneControlCenter(ctk.CTk):
 
         self.eq_sliders = []
         for label, entity in bands:
-            sl = create_live_slider(eq_frame, label, 0, 20, 20, entity, "#f1c40f", "#f39c12", 10)
+            sl = self.create_live_slider(eq_frame, label, 0, 20, 20, entity, "#f1c40f", "#f39c12", 10)
             self.eq_sliders.append(sl)
 
     def send_action(self, endpoint):
