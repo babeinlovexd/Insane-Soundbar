@@ -57,6 +57,12 @@ static void update_filters() {
         g_dsp_state.eq_b4, g_dsp_state.eq_b5
     };
 
+    // Apply Clear Voice overrides
+    if (g_dsp_state.clear_voice) {
+        eq_vals[2] = 13; // +3dB at 1kHz
+        eq_vals[3] = 14; // +4dB at 3kHz
+    }
+
     for (int i=0; i<N_EQ_BANDS; i++) {
         float gain = (float)(eq_vals[i] - 10); // 10 = 0dB
         biquad_init_peaking(&eq_global_l[i], eq_freqs[i], FS_MAIN, gain, 1.0f);
@@ -85,6 +91,8 @@ void dsp_core1_entry() {
     g_dsp_state.trim_sub = 10;
     g_dsp_state.trim_mid = 10;
     g_dsp_state.trim_high = 10;
+    g_dsp_state.night_mode = 0;
+    g_dsp_state.clear_voice = 0;
 
     update_filters();
 
@@ -116,6 +124,21 @@ void dsp_core1_entry() {
             }
             fl *= vol_multiplier;
             fr *= vol_multiplier;
+
+            // Night Mode DRC Compression
+            if (g_dsp_state.night_mode) {
+                // Simple soft knee compressor
+                float threshold = 0.25f; // -12dBFS
+                float ratio = 4.0f;
+                float fl_abs = fabsf(fl);
+                if (fl_abs > threshold) {
+                    fl = (fl > 0 ? 1.0f : -1.0f) * (threshold + (fl_abs - threshold) / ratio);
+                }
+                float fr_abs = fabsf(fr);
+                if (fr_abs > threshold) {
+                    fr = (fr > 0 ? 1.0f : -1.0f) * (threshold + (fr_abs - threshold) / ratio);
+                }
+            }
 
             // Global EQ
             fl = apply_eq(eq_global_l, fl);
