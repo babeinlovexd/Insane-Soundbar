@@ -104,6 +104,8 @@ class InsaneFlasher(ctk.CTk):
         self.dropdown_mapping = {}
         self.zeroconf = Zeroconf()
         self.is_fetching = False
+        self.log_thread = None
+        self.log_running = False
 
         # Keep-Alive Session für die API-Requests (Vermeidet Socket-Erschöpfung auf dem ESP)
         self.session = requests.Session()
