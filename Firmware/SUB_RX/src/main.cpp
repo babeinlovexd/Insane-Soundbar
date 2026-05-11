@@ -159,10 +159,10 @@ void setup() {
 
     // 1. Hardware Initialization (Mute ASAP to prevent pop)
     pinMode(PIN_MUTE_CTRL, OUTPUT);
-    digitalWrite(PIN_MUTE_CTRL, LOW); // Mute immediately
+    digitalWrite(PIN_MUTE_CTRL, HIGH); // Mute immediately (Active HIGH for TPA3116D2)
 
     pinMode(PIN_XSMT_SDZ_CTRL, OUTPUT);
-    digitalWrite(PIN_XSMT_SDZ_CTRL, LOW); // Shutdown TPA & DAC
+    digitalWrite(PIN_XSMT_SDZ_CTRL, LOW); // Shutdown TPA & DAC (Active LOW)
 
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
@@ -237,8 +237,8 @@ void loop() {
             Serial.println("CRITICAL FAULT: Subwoofer TPA Fehler! Endstufe wird abgeschaltet.");
 
             // TPA und DAC stummschalten / in den Shutdown zwingen
-            digitalWrite(PIN_MUTE_CTRL, LOW);
-            digitalWrite(PIN_XSMT_SDZ_CTRL, LOW);
+            digitalWrite(PIN_MUTE_CTRL, HIGH); // Mute
+            digitalWrite(PIN_XSMT_SDZ_CTRL, LOW); // Shutdown
 
             was_in_fault = true;
         }
@@ -259,8 +259,9 @@ void loop() {
             Serial.println("FAULT BEHOBEN: Subwoofer TPA arbeitet wieder normal.");
 
             // Endstufe wieder aufwecken
-            digitalWrite(PIN_MUTE_CTRL, HIGH);
-            digitalWrite(PIN_XSMT_SDZ_CTRL, HIGH);
+            digitalWrite(PIN_XSMT_SDZ_CTRL, HIGH); // Wake up
+            delay(50); // Stabilize
+            digitalWrite(PIN_MUTE_CTRL, LOW); // Unmute
 
             was_in_fault = false;
         }
@@ -356,7 +357,7 @@ void loop() {
         // Stream interrupted
         if (!is_muted) {
             is_muted = true;
-            digitalWrite(PIN_MUTE_CTRL, LOW); // Mute
+            digitalWrite(PIN_MUTE_CTRL, HIGH); // Mute (Active HIGH)
             digitalWrite(PIN_XSMT_SDZ_CTRL, LOW); // Shut down DAC/TPA totally to avoid any noise on long drops
         }
         // Force back into buffering state so we accumulate data when stream restarts
@@ -377,8 +378,8 @@ void loop() {
                 if (is_muted) {
                     is_muted = false;
                     digitalWrite(PIN_XSMT_SDZ_CTRL, HIGH); // Enable DAC/TPA
-                    delay(1); // Give it a tiny bit of time before unmuting
-                    digitalWrite(PIN_MUTE_CTRL, HIGH); // Unmute
+                    delay(50); // Give it a tiny bit of time before unmuting
+                    digitalWrite(PIN_MUTE_CTRL, LOW); // Unmute (Active HIGH -> LOW means Play)
                 }
             }
         }

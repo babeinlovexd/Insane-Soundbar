@@ -10,13 +10,13 @@
 // Hard mute system
 static void mute_system(bool mute) {
     if (mute) {
-        gpio_put(PIN_MUTE_CTRL, 0); // Active LOW
-        gpio_put(PIN_XSMT_CTRL, 0); // Active LOW
+        gpio_put(PIN_MUTE_CTRL, 1); // TPA3116D2 Mute is Active HIGH
+        gpio_put(PIN_XSMT_CTRL, 0); // SDZ / XSMT is Active LOW (Shutdown)
     } else {
-        // Unmute with 50ms delay per SOW
-        sleep_ms(50);
-        gpio_put(PIN_MUTE_CTRL, 1);
-        gpio_put(PIN_XSMT_CTRL, 1);
+        // Unmute sequence to prevent pop
+        gpio_put(PIN_XSMT_CTRL, 1); // Bring out of shutdown first
+        sleep_ms(50);               // Wait for TPA/DAC to stabilize
+        gpio_put(PIN_MUTE_CTRL, 0); // Release Mute (Active HIGH -> 0 means Play)
     }
 }
 
