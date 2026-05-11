@@ -734,7 +734,7 @@ class InsaneFlasher(ctk.CTk):
                 def gui_update(msg):
                     text = f"Flashing: {msg.split('...')[0]}..." if "..." in msg else msg
                     self.after(0, lambda: status_lbl.configure(text=text))
-                    self.log(msg)
+                    self.after(0, self.log, msg)
                     if "(" in msg and "%" in msg:
                         try:
                             pct_str = msg.split("(")[1].split("%")[0].strip()
@@ -827,13 +827,13 @@ class InsaneFlasher(ctk.CTk):
 
         except (requests.exceptions.RequestException, socket.error) as e:
             self.after(0, lambda: status_lbl.configure(text="❌ Netzwerk weg / Verbindung fehlgeschlagen!", text_color="red"))
-            self.log(f"Verbindungsfehler: {e}")
+            self.after(0, self.log, f"Verbindungsfehler: {e}")
         except SystemExit as e:
             if e.code != 0:
                 self.after(0, lambda: status_lbl.configure(text="❌ Flashen fehlgeschlagen (esptool error)!", text_color="red"))
         except Exception as e:
             self.after(0, lambda err=e: status_lbl.configure(text=f"❌ Flashen fehlgeschlagen: {err}", text_color="red"))
-            self.log(f"Fehler: {e}")
+            self.after(0, self.log, f"Fehler: {e}")
         finally:
             self.after(0, lambda: btn.configure(state="normal", text=f"{target.upper()} UPDATE"))
             self.after(0, lambda: self.flash_progress.pack_forget())
@@ -869,3 +869,8 @@ class InsaneFlasher(ctk.CTk):
                 self.rp_flash_btn.configure(fg_color="#e74c3c", text="RP2354 UPDATE INSTALLIEREN")
             else:
                 self.rp_flash_btn.configure(fg_color="#7a1a1a", text="RP2354 UPDATE")
+
+
+if __name__ == "__main__":
+    app = InsaneFlasher()
+    app.mainloop()
