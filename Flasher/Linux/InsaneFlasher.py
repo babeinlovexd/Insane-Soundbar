@@ -600,7 +600,10 @@ class InsaneFlasher(ctk.CTk):
             return
         self.is_fetching = True
         threading.Thread(target=self._fetch_api_data, args=(ip,), daemon=True).start()
-        self.start_log_stream(ip)
+        # FIX: Log-Stream nur starten, wenn sich die IP geändert hat
+        if getattr(self, 'current_log_ip', None) != ip:
+            self.current_log_ip = ip
+            self.start_log_stream(ip)
 
     def _fetch_api_data(self, ip):
         def get_state(domain, entity_name):
