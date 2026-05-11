@@ -182,11 +182,11 @@ class InsaneFlasher(ctk.CTk):
         self.tabview = ctk.CTkTabview(self.main_area, segmented_button_selected_color="#3b8ed0")
         self.tabview.pack(fill="both", expand=True)
 
-        self.tab_ctrl = self.tabview.add("🕹️ Steuerung")
-        self.tab_tele = self.tabview.add("📊 Telemetrie")
-        self.tab_upd = self.tabview.add("⚡ Updates")
-        self.tab_log = self.tabview.add("📝 Log")
-        self.tab_info = self.tabview.add("ℹ️ Credits & Links")
+        self.tab_ctrl = self.tabview.add("🕹️Steuerung")
+        self.tab_tele = self.tabview.add("📊Telemetrie")
+        self.tab_upd = self.tabview.add("⚡Updates")
+        self.tab_log = self.tabview.add("📝Log")
+        self.tab_info = self.tabview.add("ℹ️Credits & Links")
 
         self.setup_tab_ctrl()
         self.setup_tab_tele()
@@ -239,14 +239,9 @@ class InsaneFlasher(ctk.CTk):
         self.val_temp_dsp = create_stat(1, 1, "TEMP DSP", is_temp=True)
         self.val_amp_stat = create_stat(1, 2, "AMP FAULT")
 
-        self.val_bl_stat = create_stat(2, 0, "MEDIA STATUS")
-        self.val_bl_song = create_stat(2, 1, "MEDIA TITEL")
-        self.val_bl_art = create_stat(2, 2, "MEDIA INTERPRET")
-
-        self.val_sub_conn = create_stat(3, 0, "SUB CONN")
-        self.val_bl_conn = create_stat(3, 1, "BT CONN")
-        # Empty space for symmetry
-        self.val_dummy = create_stat(3, 2, "")
+        self.val_sub_conn = create_stat(2, 0, "SUB CONN")
+        self.val_bl_conn = create_stat(2, 1, "BT CONN")
+        self.val_dummy = create_stat(2, 2, "")
 
     def setup_tab_upd(self):
         # Mache den ganzen Updates Tab scrollbar
@@ -400,48 +395,54 @@ class InsaneFlasher(ctk.CTk):
         encoded_clear_ir = __import__('urllib').parse.quote("Alle IR-Codes löschen")
         ctk.CTkButton(btn_row, text="🗑 Clear IR", width=140, height=45, corner_radius=20, fg_color="#c0392b", hover_color="#922b21", command=lambda: self.send_action(f"button/{encoded_clear_ir}/press")).pack(side="left", padx=15)
 
+        # Helper to create slider with live value label
+        def create_live_slider(parent, title, from_val, to_val, steps, entity_name, color, hover, init_val=None):
+            container = ctk.CTkFrame(parent, fg_color="transparent")
+            container.pack(fill="x", pady=(0, 15))
+
+            top_bar = ctk.CTkFrame(container, fg_color="transparent")
+            top_bar.pack(fill="x")
+
+            lbl_title = ctk.CTkLabel(top_bar, text=title, font=("Roboto", 12))
+            lbl_title.pack(side="left")
+
+            lbl_val = ctk.CTkLabel(top_bar, text=str(init_val if init_val is not None else from_val), font=("Roboto", 12, "bold"))
+            lbl_val.pack(side="right")
+
+            def on_slider_change(val):
+                lbl_val.configure(text=str(int(val)))
+                self.send_number_value(entity_name, val)
+
+            slider = ctk.CTkSlider(container, from_=from_val, to=to_val, number_of_steps=steps, button_color=color, button_hover_color=hover, command=on_slider_change)
+            if init_val is not None:
+                slider.set(init_val)
+            slider.pack(fill="x", pady=(5, 0))
+            return slider
+
         # --- VOLUME & BRIGHTNESS ---
         ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#2ecc71").pack(pady=(20, 10))
         gen_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         gen_frame.pack(pady=5, fill="x", padx=40)
 
-        ctk.CTkLabel(gen_frame, text="Master Volume (0-100)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.vol_slider = ctk.CTkSlider(gen_frame, from_=0, to=100, number_of_steps=100, button_color="#2ecc71", button_hover_color="#27ae60", command=lambda val: self.send_number_value("Master Volume", val))
-        self.vol_slider.pack(fill="x", pady=(0, 15))
-
-        ctk.CTkLabel(gen_frame, text="OLED Brightness (0-100)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.bright_slider = ctk.CTkSlider(gen_frame, from_=0, to=100, number_of_steps=100, button_color="#3498db", button_hover_color="#2980b9", command=lambda val: self.send_number_value("OLED Brightness", val))
-        self.bright_slider.pack(fill="x", pady=(0, 15))
+        self.vol_slider = create_live_slider(gen_frame, "Master Volume (0-100)", 0, 100, 100, "Master Volume", "#2ecc71", "#27ae60", 50)
+        self.bright_slider = create_live_slider(gen_frame, "OLED Brightness (0-100)", 0, 100, 100, "OLED Brightness", "#3498db", "#2980b9", 100)
 
         # --- CROSSOVERS ---
         ctk.CTkLabel(scroll_frame, text="Frequenzweichen (Crossovers)", font=("Roboto", 18, "bold"), text_color="#e67e22").pack(pady=(20, 10))
         cross_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         cross_frame.pack(pady=5, fill="x", padx=40)
 
-        ctk.CTkLabel(cross_frame, text="Sub LP Crossover (50-255)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.sub_lp = ctk.CTkSlider(cross_frame, from_=50, to=255, number_of_steps=205, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("Sub LP Crossover", val))
-        self.sub_lp.pack(fill="x", pady=(0, 15))
-
-        ctk.CTkLabel(cross_frame, text="Sat HP Crossover (50-255)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.sat_hp = ctk.CTkSlider(cross_frame, from_=50, to=255, number_of_steps=205, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("Sat HP Crossover", val))
-        self.sat_hp.pack(fill="x", pady=(0, 15))
-
-        ctk.CTkLabel(cross_frame, text="Mid LP Crossover (500-10000)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.mid_lp = ctk.CTkSlider(cross_frame, from_=500, to=10000, number_of_steps=95, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("Mid LP Crossover", val))
-        self.mid_lp.pack(fill="x", pady=(0, 15))
-
-        ctk.CTkLabel(cross_frame, text="High HP Crossover (500-10000)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.high_hp = ctk.CTkSlider(cross_frame, from_=500, to=10000, number_of_steps=95, button_color="#e67e22", button_hover_color="#d35400", command=lambda val: self.send_number_value("High HP Crossover", val))
-        self.high_hp.pack(fill="x", pady=(0, 15))
+        self.sub_lp = create_live_slider(cross_frame, "Sub LP Crossover", 50, 255, 205, "Sub LP Crossover", "#e67e22", "#d35400", 120)
+        self.sat_hp = create_live_slider(cross_frame, "Sat HP Crossover", 50, 255, 205, "Sat HP Crossover", "#e67e22", "#d35400", 95)
+        self.mid_lp = create_live_slider(cross_frame, "Mid LP Crossover", 500, 10000, 95, "Mid LP Crossover", "#e67e22", "#d35400", 3500)
+        self.high_hp = create_live_slider(cross_frame, "High HP Crossover", 500, 10000, 95, "High HP Crossover", "#e67e22", "#d35400", 3500)
 
         # --- EQ ---
         ctk.CTkLabel(scroll_frame, text="Equalizer", font=("Roboto", 18, "bold"), text_color="#f1c40f").pack(pady=(20, 10))
         eq_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         eq_frame.pack(pady=5, fill="x", padx=40)
 
-        ctk.CTkLabel(eq_frame, text="Sub Trim (0-20)", font=("Roboto", 12)).pack(pady=(0, 5))
-        self.sub_trim = ctk.CTkSlider(eq_frame, from_=0, to=20, number_of_steps=20, button_color="#f1c40f", button_hover_color="#f39c12", command=lambda val: self.send_number_value("Sub Trim", val))
-        self.sub_trim.pack(fill="x", pady=(0, 15))
+        self.sub_trim = create_live_slider(eq_frame, "Sub Trim", 0, 20, 20, "Sub Trim", "#f1c40f", "#f39c12", 10)
 
         bands = [
             ("EQ Band 1", "EQ Band 1"),
@@ -453,10 +454,8 @@ class InsaneFlasher(ctk.CTk):
 
         self.eq_sliders = []
         for label, entity in bands:
-            ctk.CTkLabel(eq_frame, text=label + " (0-20)", font=("Roboto", 12)).pack(pady=(5, 0))
-            slider = ctk.CTkSlider(eq_frame, from_=0, to=20, number_of_steps=20, button_color="#f1c40f", button_hover_color="#f39c12", command=lambda val, e=entity: self.send_number_value(e, val))
-            slider.pack(fill="x", pady=(0, 5))
-            self.eq_sliders.append(slider)
+            sl = create_live_slider(eq_frame, label, 0, 20, 20, entity, "#f1c40f", "#f39c12", 10)
+            self.eq_sliders.append(sl)
 
     def send_action(self, endpoint):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
@@ -617,18 +616,13 @@ class InsaneFlasher(ctk.CTk):
         sys_status = get_state("text_sensor", "Insane System Status")
         t_esp = get_state("sensor", "Master Temperature")
         t_dsp = get_state("sensor", "DSP Temperature")
-        bl_stat = get_state("text_sensor", "Stream Status")
-        bl_song = get_state("text_sensor", "Bluetooth Track")
-        bl_art = get_state("text_sensor", "Bluetooth Artist")
         fault = get_state("binary_sensor", "Verstärker Überlastung (Fault)")
         wifi = get_state("sensor", "WLAN Signal")
         btrx_version = get_state("text_sensor", "BT Version")
         subtx_version = get_state("text_sensor", "SUB Version")
         rp_version = get_state("text_sensor", "DSP Version")
         bt_conn = get_state("binary_sensor", "bluetooth_connected")
-        sub_conn = get_state("text_sensor", "subwoofer_connected") # Fallback to text_sensor or we can try to figure it out from versions/ping?
-        # Wait, the YAML has `id(isb_orchestrator_inst).is_sub_connected()` but doesn't expose it. We can try fetching "SUB Version" - if it's there, sub is connected.
-        # Actually I will just pass subtx_version downstream.
+        sub_conn = get_state("text_sensor", "subwoofer_connected")
 
         import time
         current_time = time.time()
@@ -645,10 +639,10 @@ class InsaneFlasher(ctk.CTk):
             except:
                 self.online_version = None
 
-        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, bl_stat, bl_song, bl_art, fault, wifi, bt_conn, subtx_version)
+        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, subtx_version)
         self.after(0, lambda: self.check_for_updates(btrx_version, subtx_version, rp_version))
 
-    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, bl_stat, bl_song, bl_art, fault, wifi, bt_conn, subtx_version):
+    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, subtx_version):
         def set_val(lbl, text, color="#ffffff"):
             if lbl != self.val_dummy:
                 lbl.configure(text=str(text), text_color=color)
@@ -680,9 +674,7 @@ class InsaneFlasher(ctk.CTk):
         update_temp_ui(self.val_temp_esp, *parse_temp(t_esp))
         update_temp_ui(self.val_temp_dsp, *parse_temp(t_dsp))
 
-        set_val(self.val_bl_stat, bl_stat, "#3498db" if bl_stat == "playing" else "#ffffff")
-        set_val(self.val_bl_song, bl_song)
-        set_val(self.val_bl_art, bl_art)
+
 
         set_val(self.val_amp_stat, "FAULT" if fault == "ON" else "OK", "#e74c3c" if fault == "ON" else "#2ecc71")
         set_val(self.val_bl_conn, "VERBUNDEN" if bt_conn == "ON" else "GETRENNT", "#3498db" if bt_conn == "ON" else "#888888")
