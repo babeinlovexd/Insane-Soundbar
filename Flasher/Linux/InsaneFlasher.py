@@ -825,15 +825,15 @@ class InsaneFlasher(ctk.CTk):
             self.after(0, lambda: status_lbl.configure(text="🚀 Update 100% erfolgreich!", text_color="#2ecc71"))
             self.after(0, lambda: messagebox.showinfo("Update", f"{target.upper()} wurde erfolgreich aktualisiert!"))
 
-        except requests.exceptions.RequestException as e:
-            self.after(0, lambda: status_lbl.configure(text="❌ Netzwerk Fehler", text_color="red"))
-            self.log(str(e))
+        except (requests.exceptions.RequestException, socket.error) as e:
+            self.after(0, lambda: status_lbl.configure(text="❌ Netzwerk weg / Verbindung fehlgeschlagen!", text_color="red"))
+            self.log(f"Verbindungsfehler: {e}")
         except SystemExit as e:
             if e.code != 0:
-                self.after(0, lambda: status_lbl.configure(text="❌ Fehler beim Flashen!", text_color="red"))
+                self.after(0, lambda: status_lbl.configure(text="❌ Flashen fehlgeschlagen (esptool error)!", text_color="red"))
         except Exception as e:
-            self.after(0, lambda: status_lbl.configure(text="❌ Fehler!", text_color="red"))
-            self.log(str(e))
+            self.after(0, lambda err=e: status_lbl.configure(text=f"❌ Flashen fehlgeschlagen: {err}", text_color="red"))
+            self.log(f"Fehler: {e}")
         finally:
             self.after(0, lambda: btn.configure(state="normal", text=f"{target.upper()} UPDATE"))
             self.after(0, lambda: self.flash_progress.pack_forget())
