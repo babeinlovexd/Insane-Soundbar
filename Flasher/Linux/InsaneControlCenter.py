@@ -116,7 +116,7 @@ class InsaneControlCenter(ctk.CTk):
 
         # --- HEADER ---
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.header_frame.pack(pady=(20, 10), padx=40, fill="x")
+        self.header_frame.pack(pady=(20, 10))
 
         try:
             logo_path = resource_path("logo.png")
@@ -138,17 +138,16 @@ class InsaneControlCenter(ctk.CTk):
         self.author_link.grid(row=1, column=1, sticky="nw")
         self.author_link.bind("<Button-1>", lambda e: webbrowser.open(GITHUB_AUTHOR_URL))
 
-        self.main_area = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_area.pack(fill="both", expand=True, padx=20, pady=(0, 10))
+
 
         # ---------------------------------------------------------
         # SYSTEM AUSWAHL (Immer sichtbar)
         # ---------------------------------------------------------
-        self.dev_ctrl_frame = ctk.CTkFrame(self.header_frame, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
-        self.dev_ctrl_frame.grid(row=2, column=0, columnspan=3, pady=(20, 0), sticky="ew")
+        self.dev_ctrl_frame = ctk.CTkFrame(self, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
+        self.dev_ctrl_frame.pack(pady=(0, 10))
 
         inner_ctrl = ctk.CTkFrame(self.dev_ctrl_frame, fg_color="transparent")
-        inner_ctrl.pack(pady=10, padx=20, fill="x")
+        inner_ctrl.pack(pady=10, padx=20)
 
         self.device_dropdown = ctk.CTkOptionMenu(inner_ctrl, values=["Suche läuft..."], state="disabled", height=35,
                                                 fg_color="#0d1117", button_color="#21262d", button_hover_color="#30363d", command=self.on_device_select)
@@ -180,16 +179,19 @@ class InsaneControlCenter(ctk.CTk):
         self.restart_btn.pack(side="left", padx=(0, 5))
 
         # ---------------------------------------------------------
+        self.main_area = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_area.pack(fill="both", expand=True, padx=40, pady=(0, 20))
+
         # TABS EINRICHTEN
         # ---------------------------------------------------------
-        self.tabview = ctk.CTkTabview(self.main_area, segmented_button_selected_color="#2f81f7", segmented_button_fg_color="#161b22", segmented_button_unselected_color="#161b22", segmented_button_unselected_hover_color="#30363d", fg_color="transparent")
-        self.tabview.pack(fill="both", expand=True)
+        self.tabview = ctk.CTkTabview(self.main_area, segmented_button_selected_color="#2f81f7", text_color="#c9d1d9", segmented_button_fg_color="#161b22", segmented_button_unselected_color="#161b22", segmented_button_unselected_hover_color="#30363d", fg_color="transparent")
+        self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
 
-        self.tab_ctrl = self.tabview.add(" 🕹️ Steuerung ")
-        self.tab_tele = self.tabview.add(" 📊 Telemetrie ")
-        self.tab_upd = self.tabview.add(" ⚡ Updates ")
-        self.tab_log = self.tabview.add(" 📝 Log ")
-        self.tab_info = self.tabview.add(" ℹ️ Credits & Links ")
+        self.tab_ctrl = self.tabview.add("Steuerung")
+        self.tab_tele = self.tabview.add("Telemetrie")
+        self.tab_upd = self.tabview.add("Updates")
+        self.tab_log = self.tabview.add("Log")
+        self.tab_info = self.tabview.add("Info")
 
         self.setup_tab_ctrl()
         self.setup_tab_tele()
