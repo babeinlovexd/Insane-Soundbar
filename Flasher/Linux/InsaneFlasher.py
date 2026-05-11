@@ -454,11 +454,11 @@ class InsaneFlasher(ctk.CTk):
         self.sub_trim = create_live_slider(eq_frame, "Sub Trim", 0, 20, 20, "Sub Trim", "#f1c40f", "#f39c12", 10)
 
         bands = [
-            ("EQ Band 1", "EQ Band 1"),
-            ("EQ Band 2", "EQ Band 2"),
-            ("EQ Band 3", "EQ Band 3"),
-            ("EQ Band 4", "EQ Band 4"),
-            ("EQ Band 5", "EQ Band 5")
+            ("EQ Band 1 (60Hz)", "EQ Band 1"),
+            ("EQ Band 2 (230Hz)", "EQ Band 2"),
+            ("EQ Band 3 (910Hz)", "EQ Band 3"),
+            ("EQ Band 4 (3.6kHz)", "EQ Band 4"),
+            ("EQ Band 5 (14kHz)", "EQ Band 5")
         ]
 
         self.eq_sliders = []
