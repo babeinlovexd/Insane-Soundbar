@@ -575,7 +575,7 @@ number:
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_volume(x);'
   - platform: template
-    name: "EQ Band 1"
+    name: "EQ 100 Hz (Bass)"
     id: eq_b1
     min_value: 0
     max_value: 20
@@ -584,7 +584,7 @@ number:
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_eq(1, x);'
   - platform: template
-    name: "EQ Band 2"
+    name: "EQ 300 Hz (Low-Mid)"
     id: eq_b2
     min_value: 0
     max_value: 20
@@ -593,7 +593,7 @@ number:
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_eq(2, x);'
   - platform: template
-    name: "EQ Band 3"
+    name: "EQ 1 kHz (Mid)"
     id: eq_b3
     min_value: 0
     max_value: 20
@@ -602,7 +602,7 @@ number:
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_eq(3, x);'
   - platform: template
-    name: "EQ Band 4"
+    name: "EQ 3 kHz (High-Mid)"
     id: eq_b4
     min_value: 0
     max_value: 20
@@ -611,7 +611,7 @@ number:
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_eq(4, x);'
   - platform: template
-    name: "EQ Band 5"
+    name: "EQ 8 kHz (Treble)"
     id: eq_b5
     min_value: 0
     max_value: 20
