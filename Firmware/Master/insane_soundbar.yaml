@@ -74,8 +74,10 @@ logger:
 # External components
 external_components:
   - source:
-      type: local
-      path: ../../components
+      type: git
+      url: https://github.com/babeinlovexd/Insane-Soundbar
+      ref: main
+    refresh: 0s
     components: [ isb_orchestrator, stream_server ]
 
 # Enable web server for exposing sensors and versions to PC-Flasher-Tool
