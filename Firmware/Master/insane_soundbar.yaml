@@ -652,6 +652,24 @@ number:
     set_action:
       - lambda: 'id(isb_orchestrator_inst).set_sub_eq(x);'
   - platform: template
+    name: "Mid Trim"
+    id: mid_trim
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_mid_eq(x);'
+  - platform: template
+    name: "High Trim"
+    id: high_trim
+    min_value: 0
+    max_value: 20
+    step: 1
+    initial_value: 4
+    set_action:
+      - lambda: 'id(isb_orchestrator_inst).set_high_eq(x);'
+  - platform: template
     name: "Sub LP Crossover"
     id: sub_lp
     min_value: 50

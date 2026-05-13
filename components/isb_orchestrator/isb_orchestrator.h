@@ -207,6 +207,18 @@ class ISBOrchestrator : public Component {
     ESP_LOGD("ISB_ORCH", "Sent SUB EQ=%d to DSP", value);
   }
 
+  void set_mid_eq(uint8_t value) {
+    uint8_t data[2] = {0x21, value};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGD("ISB_ORCH", "Sent MID EQ=%d to DSP", value);
+  }
+
+  void set_high_eq(uint8_t value) {
+    uint8_t data[2] = {0x22, value};
+    i2c_bus_->write(DSP_I2C_ADDR, data, 2);
+    ESP_LOGD("ISB_ORCH", "Sent HIGH EQ=%d to DSP", value);
+  }
+
   void set_crossover(std::string type, float value) {
     uint8_t reg = 0;
     uint8_t val = 0;
