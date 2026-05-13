@@ -90,7 +90,7 @@ void dsp_core1_entry() {
     }
     g_dsp_state.trim_sub = 10;
     g_dsp_state.trim_mid = 10;
-    g_dsp_state.trim_high = 10;
+    g_dsp_state.trim_high = 4; // -6dB default for tweeter to match mid-range sensitivity
     g_dsp_state.night_mode = 0;
     g_dsp_state.clear_voice = 0;
 
