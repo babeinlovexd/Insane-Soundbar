@@ -1,24 +1,14 @@
 name: Build ICC (Windows EXE)
 
 on:
-  push:
-    paths:
-      - "Insane Control Center/Linux/InsaneControlCenter.py"
-      - "Insane Control Center/Linux/logo.png"
-      - "Insane Control Center/Linux/logo.ico"
   release:
     types: [published]
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  # ==========================================
-  # JOB 1: Baut die EXE und speichert sie im Repo
-  # ==========================================
-  update-repo-exe:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  build-and-release:
     runs-on: windows-latest
     steps:
       - name: Checkout Code
@@ -46,21 +36,11 @@ jobs:
           mkdir -p "Insane Control Center/Windows"
           cp "Insane Control Center/Linux/dist/InsaneControlCenter.exe" "Insane Control Center/Windows/InsaneControlCenter.exe"
 
-      - name: Auto-Commit EXE
+      - name: Auto-Commit EXE to Repo
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Auto-build: Update InsaneControlCenter.exe"
+          commit_message: "Auto-build: Update InsaneControlCenter.exe for Release"
           file_pattern: "Insane Control Center/Windows/InsaneControlCenter.exe"
-
-  # ==========================================
-  # JOB 2: Hängt die fertige EXE ans Release an
-  # ==========================================
-  add-exe-to-release:
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest # Ubuntu ist schneller und reicht völlig, da wir nur kopieren
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
 
       - name: Upload EXE as Release Asset
         uses: softprops/action-gh-release@v2
