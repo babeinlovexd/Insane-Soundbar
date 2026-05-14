@@ -12,18 +12,14 @@ Dieses Dokument ist das oberste Gesetz für alle KI-Agenten. Wer hier Code schre
 
 ## 3. Die "Source of Truth" (Dateipfade)
 Bevor Code geändert wird, MÜSSEN diese Dokumente gelesen werden. Änderungen im Code müssen sofort in diesen Dateien dokumentiert werden:
-- **Hardware-Plan:** `Plans/ISB-PinMapping_v2.md` (Keine Software-Hacks gegen diesen Plan!).
+- **Hardware-Plan:** `Plans/ISB-PinMapping_v3.md` (Keine Software-Hacks gegen diesen Plan!).
 - **I2C-Protokoll:** `Plans/i2c_register_map.md` (Jedes neue Register im DSP muss hier ZUERST eingetragen werden).
-- **Konstruktion:** `Plans/ISB_Konstruktion_V1.md`.
 
-## 4. Hardware-Gesetze (BOOT-Sequenzen)
-- **RP2354 Flasher:** Nutze die 3-Pin-Logik: EN (GPIO14), BOOT (GPIO15), BOOTSEL/SD1 (GPIO21). 
-- **Keine Pin-Doppelbelegung:** Bevor ein Pin in ESPHome zugewiesen wird, prüfe `Plans/ISB-PinMapping_v2.md`.
+## 4. Hardware-Gesetze 
+- **Keine Pin-Doppelbelegung:** Bevor ein Pin in ESPHome zugewiesen wird, prüfe `Plans/ISB-PinMapping_v3.md`.
 
 ## 5. Ordnung, Sauberkeit & Dateipflege
 - **Temp-Dateien:** Temporäre Dateien, Build-Artefakte oder Test-Logs dürfen nicht im Repository verbleiben. Nach der Generierung/Prüfung ist aufzuräumen.
 - **Verzeichnisstruktur:** Neue Dateien müssen logisch in `Firmware/`, `Plans/`, `PCB/` oder `Datasheets/` eingeordnet werden. Keine losen Dateien im Root-Verzeichnis (außer README und AGENTS.md).
 - **Code-Qualität:** Keine ungenutzten Imports, keine auskommentierten "Leichen". Der Code muss so sauber sein wie das Platinen-Layout.
 
-## 6. Persistenz & NVS
-- Infrarot-Codes und Benutzereinstellungen müssen im NVS (Non-Volatile Storage) des ESP32-S3 gespeichert werden. Ein Stromausfall darf nicht zum Verlust der TV-Fernbedienungs-Kopplung führen.
