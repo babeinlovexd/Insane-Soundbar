@@ -1,0 +1,17 @@
+name: ESPHome Check
+
+on:
+  push:
+    paths:
+      - "*.yaml"
+
+jobs:
+  esphome-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ESPHome Lint
+        uses: esphome/build-action@v2
+        with:
+          version: latest
+          config_file: Firmware/Master/insane_soundbar.yaml
