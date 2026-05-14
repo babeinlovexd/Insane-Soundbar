@@ -20,8 +20,8 @@
 #define BT_I2C_ADDR 0x21
 #define SUB_I2C_ADDR 0x22
 
-#define FAULT_H_PIN GPIO_NUM_12
-#define FAULT_M_PIN GPIO_NUM_13
+#define FAULT_H_PIN GPIO_NUM_8
+#define FAULT_M_PIN GPIO_NUM_18
 
 namespace esphome {
 namespace isb_orchestrator {

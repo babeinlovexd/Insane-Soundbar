@@ -14,8 +14,8 @@
 #include "esp_mac.h"
 #include "esp_timer.h"
 
-#define I2C_SLAVE_SCL_IO 22
-#define I2C_SLAVE_SDA_IO 21
+#define I2C_SLAVE_SCL_IO 21
+#define I2C_SLAVE_SDA_IO 19
 #define I2C_SLAVE_NUM I2C_NUM_0
 #define I2C_SLAVE_TX_BUF_LEN 256
 #define I2C_SLAVE_RX_BUF_LEN 256
@@ -23,9 +23,9 @@
 
 #define INT_PIN 23
 
-#define I2S_BCLK_PIN 25
+#define I2S_BCLK_PIN 27
 #define I2S_LRCK_PIN 26
-#define I2S_DIN_PIN 27
+#define I2S_DIN_PIN 25
 
 #define SAMPLE_RATE 11025
 

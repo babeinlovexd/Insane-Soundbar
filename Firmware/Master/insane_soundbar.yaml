@@ -110,7 +110,7 @@ light:
   - platform: esp32_rmt_led_strip
     id: status_leds
     name: "Soundbar Status"
-    pin: GPIO2
+    pin: GPIO5
     num_leds: 4
     rgb_order: GRB
     chipset: WS2812
@@ -235,21 +235,21 @@ script:
 # I2C Bus setup
 i2c:
   - id: i2c_bus
-    sda: GPIO8
-    scl: GPIO9
+    sda: GPIO12
+    scl: GPIO13
     scan: true
 
 i2s_audio:
   - id: i2s_bus_out
-    i2s_bclk_pin: GPIO38
-    i2s_lrclk_pin: GPIO39
+    i2s_bclk_pin: GPIO11
+    i2s_lrclk_pin: GPIO10
 
 speaker:
   - platform: i2s_audio
     id: isb_i2s_speaker
     dac_type: external
     i2s_audio_id: i2s_bus_out
-    i2s_dout_pin: GPIO40
+    i2s_dout_pin: GPIO9
     channel: stereo
     use_apll: false
     i2s_comm_fmt: stand_i2s
@@ -290,16 +290,16 @@ media_player:
 # UARTs for Stream Server (Flash-Hub)
 uart:
   - id: uart_dsp
-    tx_pin: GPIO4
-    rx_pin: GPIO5
-    baud_rate: 115200
+    tx_pin: GPIO38
+    rx_pin: GPIO48
+    baud_rate: 1000000
   - id: uart_sub
-    tx_pin: GPIO6
-    rx_pin: GPIO7
+    tx_pin: GPIO43
+    rx_pin: GPIO44
     baud_rate: 115200
   - id: uart_bt
-    tx_pin: GPIO10
-    rx_pin: GPIO11
+    tx_pin: GPIO2
+    rx_pin: GPIO1
     baud_rate: 115200
 
 # Stream Servers
@@ -398,7 +398,7 @@ isb_orchestrator:
 # Integration of IR receiver to Orchestrator
 remote_receiver:
   - id: ir_receiver_module
-    pin: GPIO1
+    pin: GPIO4
     dump: [nec, rc5]
     tolerance: 50%
     on_nec:
@@ -536,37 +536,37 @@ sensor:
 
 switch:
   - platform: gpio
-    pin: GPIO14
+    pin: GPIO17
     name: "DSP Flash EN"
     id: dsp_en_pin
     internal: true
   - platform: gpio
-    pin: GPIO15
+    pin: GPIO21
     name: "DSP Flash CS"
     id: dsp_boot_pin
     internal: true
   - platform: gpio
-    pin: GPIO21
+    pin: GPIO47
     name: "DSP Flash SD1"
     id: dsp_bootsel_pin
     internal: true
   - platform: gpio
-    pin: GPIO41
+    pin: GPIO40
     name: "BT Flash EN"
     id: bt_en_pin
     internal: true
   - platform: gpio
-    pin: GPIO42
+    pin: GPIO15
     name: "BT Flash BOOT"
     id: bt_boot_pin
     internal: true
   - platform: gpio
-    pin: GPIO47
+    pin: GPIO41
     name: "SUB Flash EN"
     id: sub_en_pin
     internal: true
   - platform: gpio
-    pin: GPIO48
+    pin: GPIO39
     name: "SUB Flash BOOT"
     id: sub_boot_pin
     internal: true
