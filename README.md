@@ -50,8 +50,9 @@ Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle 
 
 <a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/esphome-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/esphome-check.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=MAIN_YAML" alt="Main YAML Status"></a>
 <a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-dsp.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-dsp.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=DSP" alt="DSP Build"></a>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-bluetooth.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-bluetooth.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=BT" alt="BT Build"></a>
+<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-icc.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-icc.yml?branch=main&style=for-the-badge&logo=windows&logoColor=white&label=ICC_EXE" alt="ICC Build"></a>
 <br>
+<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-bluetooth.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-bluetooth.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=BT" alt="BT Build"></a>
 <a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-sub-tx.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-sub-tx.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=SUB_TX" alt="Sub TX Build"></a>
 <a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-sub-rx.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-sub-rx.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=SUB_RX" alt="Sub RX Build"></a>
 
