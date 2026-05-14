@@ -379,14 +379,6 @@ interval:
     then:
       - lambda: |-
           id(isb_orchestrator_inst).update_versions();
-          id(dsp_temp).publish_state(id(isb_orchestrator_inst).get_dsp_temp());
-          // Extract versions from JSON
-          std::string json = id(slave_versions).state;
-          // Simple parsing or just update directly in Orchestrator.
-          // For now, let's just do it directly.
-          id(dsp_version).publish_state(id(isb_orchestrator_inst).get_slave_version(0x20));
-          id(bt_version).publish_state(id(isb_orchestrator_inst).get_slave_version(0x21));
-          id(sub_version).publish_state(id(isb_orchestrator_inst).get_slave_version(0x22));
 
 # Custom ISB Orchestrator Component
 isb_orchestrator:
@@ -592,6 +584,7 @@ number:
   - platform: template
     name: "Master Volume"
     id: master_volume
+    optimistic: true
     min_value: 0
     max_value: 100
     step: 1
@@ -600,6 +593,7 @@ number:
   - platform: template
     name: "EQ 100 Hz (Bass)"
     id: eq_b1
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -609,6 +603,7 @@ number:
   - platform: template
     name: "EQ 300 Hz (Low-Mid)"
     id: eq_b2
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -618,6 +613,7 @@ number:
   - platform: template
     name: "EQ 1 kHz (Mid)"
     id: eq_b3
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -627,6 +623,7 @@ number:
   - platform: template
     name: "EQ 3 kHz (High-Mid)"
     id: eq_b4
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -636,6 +633,7 @@ number:
   - platform: template
     name: "EQ 8 kHz (Treble)"
     id: eq_b5
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -645,6 +643,7 @@ number:
   - platform: template
     name: "Sub Trim"
     id: sub_trim
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -654,6 +653,7 @@ number:
   - platform: template
     name: "Mid Trim"
     id: mid_trim
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -663,6 +663,7 @@ number:
   - platform: template
     name: "High Trim"
     id: high_trim
+    optimistic: true
     min_value: 0
     max_value: 20
     step: 1
@@ -672,6 +673,7 @@ number:
   - platform: template
     name: "Sub LP Crossover"
     id: sub_lp
+    optimistic: true
     min_value: 50
     max_value: 255
     step: 1
@@ -681,6 +683,7 @@ number:
   - platform: template
     name: "Sat HP Crossover"
     id: sat_hp
+    optimistic: true
     min_value: 50
     max_value: 255
     step: 1
@@ -690,6 +693,7 @@ number:
   - platform: template
     name: "Mid LP Crossover"
     id: mid_lp
+    optimistic: true
     min_value: 500
     max_value: 10000
     step: 100
@@ -699,6 +703,7 @@ number:
   - platform: template
     name: "High HP Crossover"
     id: high_hp
+    optimistic: true
     min_value: 500
     max_value: 10000
     step: 100
@@ -708,6 +713,7 @@ number:
   - platform: template
     name: "OLED Brightness"
     id: oled_brightness
+    optimistic: true
     min_value: 0
     max_value: 100
     step: 1
