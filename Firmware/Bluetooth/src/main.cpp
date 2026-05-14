@@ -5,13 +5,13 @@
 #include "esp_bt.h"
 
 #define I2C_SLAVE_ADDR 0x21
-#define I2C_SDA_PIN 21
-#define I2C_SCL_PIN 22
+#define I2C_SDA_PIN 16
+#define I2C_SCL_PIN 17
 #define INT_PIN 23
 
-#define I2S_BCK_PIN 26
-#define I2S_WS_PIN 25
-#define I2S_DATA_PIN 27
+#define I2S_BCK_PIN 19
+#define I2S_WS_PIN 18
+#define I2S_DATA_PIN 21
 
 // I2C Registers
 volatile uint8_t reg_bt_state = 1;
