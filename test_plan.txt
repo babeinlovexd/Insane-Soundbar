@@ -1,4 +1,0 @@
-1. Implement `CMakeLists.txt` for the Pico SDK project.
-2. Create `main.c` (Core 0) to handle I2C slave communication, routing, and mute logic.
-3. Create `dsp.c` / `dsp.h` (Core 1) for Biquad filters and EQ.
-4. Create PIO files and drivers for I2S and S/PDIF.
