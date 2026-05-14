@@ -44,7 +44,7 @@ Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle 
 <img src="https://img.shields.io/badge/Espressif-MCUs-E7352C?style=for-the-badge&logo=espressif&logoColor=white" alt="Espressif">
 <img src="https://img.shields.io/badge/Raspberry_Pi-DSP-C51A4A?style=for-the-badge&logo=raspberrypi&logoColor=white" alt="Raspberry Pi">
 <img src="https://img.shields.io/badge/Texas_Instruments-Audio_ICs-CC0000?style=for-the-badge&logo=stmicroelectronics&logoColor=white&v=1" alt="TI">
-<img src="https://img.shields.io/badge/PCB-JLCPCB-005082?style=for-the-badge&logo=easyeda&logoColor=white" alt="JLCPCB">
+<img src="https://img.shields.io/badge/JLCPCB-PCB-005082?style=for-the-badge&logo=easyeda&logoColor=white" alt="JLCPCB">
 
 ---
 
