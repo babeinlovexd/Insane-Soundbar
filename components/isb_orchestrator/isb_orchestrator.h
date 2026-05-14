@@ -289,9 +289,13 @@ class ISBOrchestrator : public Component {
         ESP_LOGI("ISB_ORCH", "Received IR %08X, Action: %s", code, action.c_str());
 
         if (action == "Vol+") {
-          set_dsp_volume(std::min(100, current_volume + 5));
+          uint8_t new_vol = std::min((int)100, (int)current_volume + 5);
+          set_dsp_volume(new_vol);
+          id(master_volume).publish_state(new_vol);
         } else if (action == "Vol-") {
-          set_dsp_volume(std::max(0, current_volume - 5));
+          uint8_t new_vol = std::max((int)0, (int)current_volume - 5);
+          set_dsp_volume(new_vol);
+          id(master_volume).publish_state(new_vol);
         } else if (action == "Play") {
           send_media_command(0x01);
         } else if (action == "Pause") {
@@ -359,25 +363,26 @@ class ISBOrchestrator : public Component {
 
   void update_versions() {
     if (versions_sensor_ != nullptr) {
+      // Nur EINMAL über I2C abfragen
       std::string dsp_ver = get_slave_version(DSP_I2C_ADDR);
       std::string bt_ver = get_slave_version(BT_I2C_ADDR);
       std::string sub_ver = get_slave_version(SUB_I2C_ADDR);
 
+      // JSON für Home Assistant / Logs
       char json_buf[128];
       snprintf(json_buf, sizeof(json_buf),
                "{\"dsp\":\"%s\",\"bt\":\"%s\",\"sub\":\"%s\"}",
                dsp_ver.c_str(), bt_ver.c_str(), sub_ver.c_str());
-
       versions_sensor_->publish_state(json_buf);
 
-      // Also publish to dedicated sensors if they exist (we'll look them up by id later, or they can be published using a template sensor lambda)
-      // Actually, since we want the JSON split, we should publish to them from the YAML using on_value or we can do it via C++ APIs if we export them.
-      // But it's easier to just poll the temperature here since we're updating versions anyway.
+      // Sensoren für das ICC füttern (Null I2C-Traffic!)
+      id(dsp_version).publish_state(dsp_ver);
+      id(bt_version).publish_state(bt_ver);
+      id(sub_version).publish_state(sub_ver);
 
+      // Temperatur
       uint8_t temp = get_dsp_temp();
-      // Wait, we need to pass this to the sensor. A cleaner way is doing a custom sensor in YAML that calls get_dsp_temp.
-
-      ESP_LOGD("ISB_ORCH", "Published versions: %s", json_buf);
+      id(dsp_temp).publish_state(temp);
     }
   }
 };
