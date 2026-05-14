@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "*.yaml"
+  workflow_dispatch:
 
 jobs:
   esphome-lint:
