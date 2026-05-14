@@ -23,9 +23,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
 
-      - name: Install Library Dependencies
-        working-directory: Firmware/Bluetooth/lib
+      - name: Clone custom libraries
         run: |
+          mkdir -p Firmware/Bluetooth/lib
+          cd Firmware/Bluetooth/lib
           rm -rf ESP32-A2DP arduino-audio-tools
           git clone https://github.com/pschatzmann/ESP32-A2DP.git
           git clone https://github.com/pschatzmann/arduino-audio-tools.git
