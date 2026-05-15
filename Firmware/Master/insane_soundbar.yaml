@@ -9,29 +9,37 @@ esphome:
     board_build.flash_mode: dio
 
   on_boot:
-    priority: 600
-    then:
-      - light.turn_on:
-          id: status_leds
-          effect: "Knight Rider"
-          red: 1.0
-          green: 0.0
-          blue: 0.0
-          brightness: 1.0
-      - lambda: |-
-          id(isb_orchestrator_inst).set_on_learn_success_callback([]() {
-            id(led_rainbow).execute();
-          });
-          id(isb_orchestrator_inst).set_on_mute_toggled_callback([](bool muted) {
-            if (muted) {
-              id(led_mute_pause).execute();
-            } else {
-              id(led_input_active).execute();
-            }
-          });
-          id(isb_orchestrator_inst).set_on_standby_callback([]() {
-            id(led_standby).execute();
-          });
+    - priority: 800
+      then:
+        - lambda: |-
+            id(isb_orchestrator_inst)->set_master_volume((esphome::template_::TemplateNumber*)id(master_volume));
+            id(isb_orchestrator_inst)->set_dsp_version((esphome::template_::TemplateTextSensor*)id(dsp_version));
+            id(isb_orchestrator_inst)->set_bt_version((esphome::template_::TemplateTextSensor*)id(bt_version));
+            id(isb_orchestrator_inst)->set_sub_version((esphome::template_::TemplateTextSensor*)id(sub_version));
+            id(isb_orchestrator_inst)->set_dsp_temp((esphome::template_::TemplateSensor*)id(dsp_temp));
+    - priority: 600
+      then:
+        - light.turn_on:
+            id: status_leds
+            effect: "Knight Rider"
+            red: 1.0
+            green: 0.0
+            blue: 0.0
+            brightness: 1.0
+        - lambda: |-
+            id(isb_orchestrator_inst)->set_on_learn_success_callback([]() {
+              id(led_rainbow).execute();
+            });
+            id(isb_orchestrator_inst)->set_on_mute_toggled_callback([](bool muted) {
+              if (muted) {
+                id(led_mute_pause).execute();
+              } else {
+                id(led_input_active).execute();
+              }
+            });
+            id(isb_orchestrator_inst)->set_on_standby_callback([]() {
+              id(led_standby).execute();
+            });
 
 psram:
   mode: octal
