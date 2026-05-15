@@ -48,7 +48,7 @@ Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle 
 
 ---
 
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/esphome-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/esphome-check.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=MAIN_YAML" alt="Main YAML Status"></a>
+<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/esphome-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/esphome-check.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=MAIN_YAML&v=1" alt="Main YAML Status"></a>
 <a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-dsp.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-dsp.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=DSP" alt="DSP Build"></a>
 <a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-icc.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-icc.yml?style=for-the-badge&logo=windows&logoColor=white&label=ICC_EXE&v=1" alt="ICC Build"></a>
 <br>
