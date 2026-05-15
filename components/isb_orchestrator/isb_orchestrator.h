@@ -24,6 +24,10 @@
 #define FAULT_H_PIN GPIO_NUM_8
 #define FAULT_M_PIN GPIO_NUM_18
 
+#include "esphome/components/template/text_sensor/template_text_sensor.h"
+#include "esphome/components/template/sensor/template_sensor.h"
+#include "esphome/components/template/number/template_number.h"
+
 namespace esphome {
 namespace isb_orchestrator {
 
@@ -60,6 +64,18 @@ class ISBOrchestrator : public Component {
   void set_i2c_bus(i2c::I2CBus *bus) { i2c_bus_ = bus; }
   void set_versions_sensor(text_sensor::TextSensor *sensor) { versions_sensor_ = sensor; }
   void set_fault_sensor(binary_sensor::BinarySensor *sensor) { fault_sensor_ = sensor; }
+
+  esphome::template_::TemplateNumber *master_volume_{nullptr};
+  esphome::template_::TemplateTextSensor *dsp_version_{nullptr};
+  esphome::template_::TemplateTextSensor *bt_version_{nullptr};
+  esphome::template_::TemplateTextSensor *sub_version_{nullptr};
+  esphome::template_::TemplateSensor *dsp_temp_{nullptr};
+
+  void set_master_volume(esphome::template_::TemplateNumber *master_volume) { master_volume_ = master_volume; }
+  void set_dsp_version(esphome::template_::TemplateTextSensor *dsp_version) { dsp_version_ = dsp_version; }
+  void set_bt_version(esphome::template_::TemplateTextSensor *bt_version) { bt_version_ = bt_version; }
+  void set_sub_version(esphome::template_::TemplateTextSensor *sub_version) { sub_version_ = sub_version; }
+  void set_dsp_temp(esphome::template_::TemplateSensor *dsp_temp) { dsp_temp_ = dsp_temp; }
 
   void setup() override {
     // 1. Send MUTE to DSP immediately
@@ -292,11 +308,11 @@ class ISBOrchestrator : public Component {
         if (action == "Vol+") {
           uint8_t new_vol = std::min((int)100, (int)current_volume + 5);
           set_dsp_volume(new_vol);
-          id(master_volume).publish_state(new_vol);
+          if (master_volume_) master_volume_->publish_state(new_vol);
         } else if (action == "Vol-") {
           uint8_t new_vol = std::max((int)0, (int)current_volume - 5);
           set_dsp_volume(new_vol);
-          id(master_volume).publish_state(new_vol);
+          if (master_volume_) master_volume_->publish_state(new_vol);
         } else if (action == "Play") {
           send_media_command(0x01);
         } else if (action == "Pause") {
@@ -377,13 +393,13 @@ class ISBOrchestrator : public Component {
       versions_sensor_->publish_state(json_buf);
 
       // Sensoren für das ICC füttern (Null I2C-Traffic!)
-      id(dsp_version).publish_state(dsp_ver);
-      id(bt_version).publish_state(bt_ver);
-      id(sub_version).publish_state(sub_ver);
+      if (dsp_version_) dsp_version_->publish_state(dsp_ver);
+      if (bt_version_) bt_version_->publish_state(bt_ver);
+      if (sub_version_) sub_version_->publish_state(sub_ver);
 
       // Temperatur
       uint8_t temp = get_dsp_temp();
-      id(dsp_temp).publish_state(temp);
+      if (dsp_temp_) dsp_temp_->publish_state(temp);
     }
   }
 };
