@@ -36,7 +36,7 @@ jobs:
       - name: Build APK
         working-directory: "Insane Control Center/Android"
         run: |
-          flet build apk --module-name src.main
+          flet build apk --module-name main
 
       - name: Locate and Move APK
         working-directory: "Insane Control Center/Android"
