@@ -65,6 +65,7 @@ def main(page: ft.Page):
     is_fetching = False
     log_running = False
     current_log_ip = None
+    browser = None
     
     online_version = None
     last_update_check = 0
@@ -160,6 +161,7 @@ def main(page: ft.Page):
             content=ft.Row([
                 device_dropdown,
                 ft.ElevatedButton("⭐ Merken", on_click=save_favorite, bgcolor="transparent", color="#e3b341"),
+                ft.ElevatedButton("🔄 Scan", on_click=start_scan, bgcolor="transparent", color="#2ecc71"),
                 ft.ElevatedButton("✖ Löschen", on_click=delete_favorite, bgcolor="transparent", color="#c0392b")
             ])
         )
@@ -233,6 +235,29 @@ def main(page: ft.Page):
             if log_running: log(f"Log-Verbindung getrennt: {e}")
 
     # --- Control Backend ---
+    def start_scan(e=None):
+        nonlocal browser
+        scanned_devices.clear()
+        if not favorite_devices:
+            device_dropdown.options = [ft.dropdown.Option("Suche läuft...")]
+            device_dropdown.disabled = True
+            device_dropdown.value = "Suche läuft..."
+        else:
+            _update_dropdown()
+
+        if browser:
+            browser.cancel()
+        browser = ServiceBrowser(zeroconf, "_esphomelib._tcp.local.", DeviceListener(add_device_to_ui))
+        show_snackbar("Netzwerk Scan gestartet...", is_error=False)
+
+    def restart_bluetooth(e):
+        ip = dropdown_mapping.get(device_dropdown.value)
+        if not ip: return
+        import urllib.parse
+        encoded_btn = urllib.parse.quote("Normal Boot: Bluetooth (ESP32)")
+        threading.Thread(target=lambda: session.post(f"http://{ip}/button/{encoded_btn}/press", timeout=3), daemon=True).start()
+        show_snackbar("⚡ Bluetooth-Chip (BT_RX) wird neugestartet!", is_error=False)
+
     def send_action(endpoint):
         ip = dropdown_mapping.get(device_dropdown.value)
         if ip: threading.Thread(target=lambda: session.post(f"http://{ip}/{endpoint}", timeout=2), daemon=True).start()
@@ -649,7 +674,7 @@ def main(page: ft.Page):
                             bgcolor="#161b22", border=ft.border.all(1, "#30363d"), border_radius=10, padding=20,
                             content=ft.Column([
                                 ft.Text("ESP32 (BT_RX / BLUETOOTH)", size=14, weight="bold", color="#2f81f7"),
-                                btrx_fw_label, btrx_status, btrx_flash_btn
+                                btrx_fw_label, btrx_status, ft.Row([btrx_flash_btn, ft.ElevatedButton("RESTART BT", bgcolor="#e67e22", color="white", on_click=restart_bluetooth)])
                             ])
                         ),
                         ft.Container(
@@ -690,13 +715,7 @@ def main(page: ft.Page):
 
     # --- Start ZeroConf Scan ---
     zeroconf = Zeroconf()
-    if not favorite_devices:
-        device_dropdown.options = [ft.dropdown.Option("Suche läuft...")]
-        device_dropdown.disabled = True
-        device_dropdown.value = "Suche läuft..."
-    else:
-        _update_dropdown()
-    ServiceBrowser(zeroconf, "_esphomelib._tcp.local.", DeviceListener(add_device_to_ui))
+    start_scan(None)
 
 if __name__ == "__main__":
     ft.app(target=main)
