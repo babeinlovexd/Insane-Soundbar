@@ -443,7 +443,21 @@ class InsaneControlCenter(ctk.CTk):
         encoded_learn = __import__('urllib').parse.quote("Start IR Learn")
         ctk.CTkButton(btn_row, text="🎯 IR Learn", width=140, height=45, corner_radius=20, fg_color="#3498db", hover_color="#2980b9", command=lambda: self.send_action(f"button/{encoded_learn}/press")).pack(side="left", padx=15)
 
+        encoded_restart = __import__('urllib').parse.quote("Master Restart")
+        ctk.CTkButton(btn_row, text="🔄 Master Restart", width=140, height=45, corner_radius=20, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_restart}/press")).pack(side="left", padx=15)
+
         # Helper to create slider with live value label
+
+        # --- AUDIO ENHANCEMENTS ---
+        ctk.CTkLabel(scroll_frame, text="Audio Verbesserungen", font=("Roboto", 18, "bold"), text_color="#f1c40f").pack(pady=(20, 10))
+        enh_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        enh_frame.pack(pady=5, fill="x", padx=40)
+
+        self.switch_night_mode = ctk.CTkSwitch(enh_frame, text="Night Mode (DRC)", command=lambda: self.send_switch_value("Night Mode (DRC)", self.switch_night_mode.get()), onvalue=True, offvalue=False)
+        self.switch_night_mode.pack(side="left", padx=15)
+
+        self.switch_clear_voice = ctk.CTkSwitch(enh_frame, text="Clear Voice", command=lambda: self.send_switch_value("Clear Voice", self.switch_clear_voice.get()), onvalue=True, offvalue=False)
+        self.switch_clear_voice.pack(side="left", padx=15)
 
         # --- VOLUME & BRIGHTNESS ---
         ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#3fb950").pack(pady=(20, 10))
@@ -474,13 +488,15 @@ class InsaneControlCenter(ctk.CTk):
         eq_frame.pack(pady=5, fill="x", padx=40)
 
         self.sub_trim = self.create_live_slider(eq_frame, "Sub Trim", 0, 20, 20, "Sub Trim", "#f1c40f", "#f39c12", 10)
+        self.mid_trim = self.create_live_slider(eq_frame, "Mid Trim", 0, 20, 20, "Mid Trim", "#f1c40f", "#f39c12", 10)
+        self.high_trim = self.create_live_slider(eq_frame, "High Trim", 0, 20, 20, "High Trim", "#f1c40f", "#f39c12", 4)
 
         bands = [
-            ("EQ Band 1 (60Hz)", "EQ Band 1"),
-            ("EQ Band 2 (230Hz)", "EQ Band 2"),
-            ("EQ Band 3 (910Hz)", "EQ Band 3"),
-            ("EQ Band 4 (3.6kHz)", "EQ Band 4"),
-            ("EQ Band 5 (14kHz)", "EQ Band 5")
+            ("EQ 100 Hz (Bass)", "EQ 100 Hz (Bass)"),
+            ("EQ 300 Hz (Low-Mid)", "EQ 300 Hz (Low-Mid)"),
+            ("EQ 1 kHz (Mid)", "EQ 1 kHz (Mid)"),
+            ("EQ 3 kHz (High-Mid)", "EQ 3 kHz (High-Mid)"),
+            ("EQ 8 kHz (Treble)", "EQ 8 kHz (Treble)")
         ]
 
         self.eq_sliders = []
@@ -510,6 +526,15 @@ class InsaneControlCenter(ctk.CTk):
         encoded_val = urllib.parse.quote(value)
         import threading
         threading.Thread(target=lambda: self.session.post(f"http://{ip}/select/{encoded_name}/set?option={encoded_val}", timeout=2), daemon=True).start()
+
+    def send_switch_value(self, entity_name, state):
+        ip = self.dropdown_mapping.get(self.device_dropdown.get())
+        if not ip: return
+        import urllib.parse
+        encoded_name = urllib.parse.quote(entity_name)
+        action = "turn_on" if state else "turn_off"
+        import threading
+        threading.Thread(target=lambda: self.session.post(f"http://{ip}/switch/{encoded_name}/{action}", timeout=2), daemon=True).start()
 
     # --- LOGIK FUNKTIONEN ---
     def add_device_to_ui(self, name, ip):
