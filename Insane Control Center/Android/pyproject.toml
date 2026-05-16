@@ -1,5 +1,5 @@
 [project]
-name = "android"
+name = "InsaneControlCenter"
 version = "0.1.0"
 description = ""
 readme = "README.md"
@@ -8,7 +8,11 @@ authors = [
     { name = "Flet developer", email = "you@example.com" }
 ]
 dependencies = [
-    "flet>=0.85.1"
+    "flet>=0.85.1",
+    "requests",
+    "zeroconf",
+    "esptool",
+    "pyserial"
 ]
 
 [dependency-groups]
@@ -20,10 +24,10 @@ dev = [
 
 [tool.flet]
 desktop_flavor = "light"    # Change to "full" to use flet-audio and flet-video
-org = "com.mycompany"
-product = "android"
-company = "Flet"
-copyright = "Copyright (C) 2023-2026 by Flet"
+org = "com.babeinlovexd"
+product = "Insane Control Center"
+company = "BabeinlovexD"
+copyright = "Copyright (C) 2026 by BabeinlovexD"
 
 [tool.flet.app]
 path = "src"
