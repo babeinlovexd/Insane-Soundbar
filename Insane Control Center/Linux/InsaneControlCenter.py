@@ -144,18 +144,22 @@ class InsaneControlCenter(ctk.CTk):
         # SYSTEM AUSWAHL (Immer sichtbar)
         # ---------------------------------------------------------
         self.dev_ctrl_frame = ctk.CTkFrame(self, fg_color="#161b22", border_width=1, border_color="#30363d", corner_radius=10)
-        self.dev_ctrl_frame.pack(pady=(0, 10))
+        self.dev_ctrl_frame.pack(fill="x", padx=40, pady=(0, 10))
 
         inner_ctrl = ctk.CTkFrame(self.dev_ctrl_frame, fg_color="transparent")
-        inner_ctrl.pack(pady=10, padx=20)
+        inner_ctrl.pack(fill="x", pady=10, padx=20)
 
         self.device_dropdown = ctk.CTkOptionMenu(inner_ctrl, values=["Suche läuft..."], state="disabled", height=35,
                                                 fg_color="#0d1117", button_color="#21262d", button_hover_color="#30363d", command=self.on_device_select)
         self.device_dropdown.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
+        # Container für Buttons rechts
+        btn_container = ctk.CTkFrame(inner_ctrl, fg_color="transparent")
+        btn_container.pack(side="right")
+
         # 1. Favoriten Button (Outline-Style mit Text)
         self.fav_btn = ctk.CTkButton(
-            inner_ctrl, text="⭐ Merken", width=95, height=32,
+            btn_container, text="⭐ Merken", width=95, height=32,
             fg_color="transparent", border_width=1, border_color="#f1c40f",
             hover_color="#333333", text_color="#e3b341", font=("Roboto", 13, "bold"),
             command=self.save_favorite
@@ -163,20 +167,12 @@ class InsaneControlCenter(ctk.CTk):
         self.fav_btn.pack(side="left", padx=(0, 5))
 
         self.del_fav_btn = ctk.CTkButton(
-            inner_ctrl, text="✖ Löschen", width=95, height=32,
+            btn_container, text="✖ Löschen", width=95, height=32,
             fg_color="transparent", border_width=1, border_color="#c0392b",
             hover_color="#333333", text_color="#c0392b", font=("Roboto", 13, "bold"),
             command=self.delete_favorite
         )
-        self.del_fav_btn.pack(side="left", padx=(0, 20))
-
-        self.restart_btn = ctk.CTkButton(
-            inner_ctrl, text="⚡ System Reset", width=120, height=32,
-            fg_color="transparent", border_width=1, border_color="#e67e22",
-            hover_color="#333333", text_color="#d29922", font=("Roboto", 13, "bold"),
-            command=self.restart_bluetooth
-        )
-        self.restart_btn.pack(side="left", padx=(0, 5))
+        self.del_fav_btn.pack(side="left")
 
         # ---------------------------------------------------------
         self.main_area = ctk.CTkFrame(self, fg_color="transparent")
@@ -427,24 +423,33 @@ class InsaneControlCenter(ctk.CTk):
         ctk.CTkLabel(sys_frame, text="Input Source", font=("Roboto", 14)).pack(pady=(0, 5))
         self.input_dropdown = ctk.CTkOptionMenu(sys_frame, values=["Toslink", "Aux", "Bluetooth", "WLAN"], command=lambda val: self.send_select_value("Input Source", val))
         self.input_dropdown.pack(fill="x", pady=(0, 15))
-        ctk.CTkLabel(sys_frame, text="IR Learn Target", font=("Roboto", 14)).pack(pady=(0, 5))
-        self.ir_dropdown = ctk.CTkOptionMenu(sys_frame, values=["None", "Vol+", "Vol-", "Mute", "Input Next"], command=lambda val: self.send_select_value("IR Learn Target", val))
-        self.ir_dropdown.pack(fill="x", pady=(0, 15))
-
-        btn_row = ctk.CTkFrame(sys_frame, fg_color="transparent")
-        btn_row.pack(pady=10)
+        sys_btn_row = ctk.CTkFrame(sys_frame, fg_color="transparent")
+        sys_btn_row.pack(pady=10)
 
         encoded_pair = __import__('urllib').parse.quote("Pair Subwoofer")
-        ctk.CTkButton(btn_row, text="🔊 Pair Subwoofer", width=140, height=45, corner_radius=20, fg_color="#e67e22", hover_color="#d35400", command=lambda: self.send_action(f"button/{encoded_pair}/press")).pack(side="left", padx=15)
-
-        encoded_clear_ir = __import__('urllib').parse.quote("Alle IR-Codes löschen")
-        ctk.CTkButton(btn_row, text="🗑 Clear IR", width=140, height=45, corner_radius=20, fg_color="#c0392b", hover_color="#922b21", command=lambda: self.send_action(f"button/{encoded_clear_ir}/press")).pack(side="left", padx=15)
-
-        encoded_learn = __import__('urllib').parse.quote("Start IR Learn")
-        ctk.CTkButton(btn_row, text="🎯 IR Learn", width=140, height=45, corner_radius=20, fg_color="#3498db", hover_color="#2980b9", command=lambda: self.send_action(f"button/{encoded_learn}/press")).pack(side="left", padx=15)
+        ctk.CTkButton(sys_btn_row, text="Pair Subwoofer", width=140, height=45, corner_radius=20, fg_color="#e67e22", hover_color="#d35400", command=lambda: self.send_action(f"button/{encoded_pair}/press")).pack(side="left", padx=15)
 
         encoded_restart = __import__('urllib').parse.quote("Master Restart")
-        ctk.CTkButton(btn_row, text="🔄 Master Restart", width=140, height=45, corner_radius=20, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_restart}/press")).pack(side="left", padx=15)
+        ctk.CTkButton(sys_btn_row, text="Master Restart", width=140, height=45, corner_radius=20, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_restart}/press")).pack(side="left", padx=15)
+
+        # --- INFRAROT (IR) ---
+        ctk.CTkLabel(scroll_frame, text="Infrarot (IR)", font=("Roboto", 20, "bold"), text_color="#2f81f7").pack(pady=(20, 10))
+
+        ir_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        ir_frame.pack(pady=5, fill="x", padx=40)
+
+        ctk.CTkLabel(ir_frame, text="IR Learn Target", font=("Roboto", 14)).pack(pady=(0, 5))
+        self.ir_dropdown = ctk.CTkOptionMenu(ir_frame, values=["None", "Vol+", "Vol-", "Mute", "Input Next"], command=lambda val: self.send_select_value("IR Learn Target", val))
+        self.ir_dropdown.pack(fill="x", pady=(0, 15))
+
+        ir_btn_row = ctk.CTkFrame(ir_frame, fg_color="transparent")
+        ir_btn_row.pack(pady=10)
+
+        encoded_learn = __import__('urllib').parse.quote("Start IR Learn")
+        ctk.CTkButton(ir_btn_row, text="IR Learn", width=140, height=45, corner_radius=20, fg_color="#3498db", hover_color="#2980b9", command=lambda: self.send_action(f"button/{encoded_learn}/press")).pack(side="left", padx=15)
+
+        encoded_clear_ir = __import__('urllib').parse.quote("Alle IR-Codes löschen")
+        ctk.CTkButton(ir_btn_row, text="Clear IR", width=140, height=45, corner_radius=20, fg_color="#c0392b", hover_color="#922b21", command=lambda: self.send_action(f"button/{encoded_clear_ir}/press")).pack(side="left", padx=15)
 
         # Helper to create slider with live value label
 
@@ -453,11 +458,15 @@ class InsaneControlCenter(ctk.CTk):
         enh_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         enh_frame.pack(pady=5, fill="x", padx=40)
 
-        self.switch_night_mode = ctk.CTkSwitch(enh_frame, text="Night Mode (DRC)", command=lambda: self.send_switch_value("Night Mode (DRC)", self.switch_night_mode.get()), onvalue=True, offvalue=False)
-        self.switch_night_mode.pack(side="left", padx=15)
+        # Container um Switches zu zentrieren
+        switch_container = ctk.CTkFrame(enh_frame, fg_color="transparent")
+        switch_container.pack(expand=True)
 
-        self.switch_clear_voice = ctk.CTkSwitch(enh_frame, text="Clear Voice", command=lambda: self.send_switch_value("Clear Voice", self.switch_clear_voice.get()), onvalue=True, offvalue=False)
-        self.switch_clear_voice.pack(side="left", padx=15)
+        self.switch_night_mode = ctk.CTkSwitch(switch_container, text="Night Mode (DRC)", font=("Roboto", 14, "bold"), progress_color="#f1c40f", button_color="#e3b341", command=lambda: self.send_switch_value("Night Mode (DRC)", self.switch_night_mode.get()), onvalue=True, offvalue=False)
+        self.switch_night_mode.pack(side="left", padx=25)
+
+        self.switch_clear_voice = ctk.CTkSwitch(switch_container, text="Clear Voice", font=("Roboto", 14, "bold"), progress_color="#f1c40f", button_color="#e3b341", command=lambda: self.send_switch_value("Clear Voice", self.switch_clear_voice.get()), onvalue=True, offvalue=False)
+        self.switch_clear_voice.pack(side="left", padx=25)
 
         # --- VOLUME & BRIGHTNESS ---
         ctk.CTkLabel(scroll_frame, text="Allgemein", font=("Roboto", 18, "bold"), text_color="#3fb950").pack(pady=(20, 10))
