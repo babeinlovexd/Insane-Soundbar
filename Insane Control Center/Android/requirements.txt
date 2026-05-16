@@ -1,0 +1,4 @@
+flet>=0.85.1
+requests
+zeroconf
+pyserial
