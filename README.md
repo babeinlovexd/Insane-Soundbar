@@ -64,6 +64,12 @@ Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle 
 
 ---
 
+<img src="PCB/ISB/3D.png" alt="ISB Platine" width="500">
+<img src="PCB/ISB_SUB/3D.png" alt="Subwoofer Platine" width="500">
+<img src="PCB/Flashcore/3D.png" alt="Flashcore Platine" width="500">
+
+---
+
 ## ⚖️ Lizenz
 Dieses komplette Projekt (Hardware und Software) steht unter der [CC BY-NC-SA 4.0 Lizenz](https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 Das bedeutet: Nachbauen und Anpassen für private Zwecke ist ausdrücklich erwünscht, jede kommerzielle Nutzung oder der Verkauf sind strikt verboten!
