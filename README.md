@@ -2,7 +2,7 @@
 
 # 🔊 Insane Soundbar
 
-Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle Smart-Home-Integration.**
+Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle Smart-Home-Integration.
 
 ---
 
