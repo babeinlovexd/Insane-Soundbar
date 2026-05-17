@@ -180,7 +180,7 @@ Every cent goes directly toward the ongoing development of ISB and new prototype
 
 ---
 
-## 👨‍💻 Entwickelt von
+## 👨‍💻 Developed by
 
 | [<img src="https://avatars.githubusercontent.com/u/43302033?v=4" width="100"><br><sub>**BabeinlovexD**</sub>](https://github.com/babeinlovexd) |
 | :---: |
