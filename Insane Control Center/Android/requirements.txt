@@ -1,4 +1,7 @@
 flet>=0.85.1
+pyserial
+bitstring
+ecdsa
+reedsolo
 requests
 zeroconf
-pyserial
