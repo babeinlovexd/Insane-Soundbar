@@ -2,7 +2,7 @@
 
 # 🔊 Insane Soundbar
 
-Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle Smart-Home-Integration.
+Four ESP32-Cores and an RP2354A-Hardware-DPS for lossless audio and full smart home intergation.
 
 ---
 
@@ -169,14 +169,14 @@ graph TD
 
 ---
 
-## ☕ Support dieses Projekts
-**Insane Soundbar** hat extrem viel Zeit, Nerven und Kaffee gekostet. Wenn dir das System gefällt und du meine Arbeit unterstützen möchtest, freue ich mich riesig über einen virtuellen Kaffee!
+## ☕ Support this project
+**Insane Soundbar** took a ton of time, endless caffeine, and a few of my sanity cells. If you love the system and want to support my work, I'd appreciate a virtual coffee.
 
 <a href="https://www.paypal.me/babeinlovexd">
   <img src="https://img.shields.io/badge/Donate-PayPal-blue.svg?style=for-the-badge&logo=paypal" alt="Donate mit PayPal">
 </a>
 
-Jeder Cent fließt direkt in die Entwicklung von ISB und neue Prototypen! 🚀
+Every cent goes directly toward the ongoing development of ISB and new prototypes. 🚀
 
 ---
 
