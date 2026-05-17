@@ -158,8 +158,11 @@ graph TD
     DAC_Sub -->|Analog| Amp_Sub
     Amp_Sub -->|Speaker Wire| Chassis_Sub
     Chassis_Sub ---|Acoustic Coupling| PR_Sub
+
 ```
     
+<img src="Images/steuerrung.png" alt="ISB Platine" width="500">
+<img src="Images/dsp.png" alt="ISB Platine" width="500">
 <img src="PCB/ISB/3D.png" alt="ISB Platine" width="500">
 <img src="PCB/ISB_SUB/3D.png" alt="Subwoofer Platine" width="500">
 <img src="PCB/Flashcore/3D.png" alt="Flashcore Platine" width="500">
