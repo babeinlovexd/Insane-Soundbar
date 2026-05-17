@@ -11,8 +11,10 @@ dependencies = [
     "flet>=0.85.1",
     "requests",
     "zeroconf",
-    "esptool",
-    "pyserial"
+    "pyserial",
+    "bitstring",
+    "ecdsa",
+    "reedsolo"
 ]
 
 [dependency-groups]
