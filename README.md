@@ -7,7 +7,7 @@ Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle 
 ---
 
 <a href="https://github.com/babeinlovexd/insane-soundbar/releases"><img src="https://img.shields.io/github/v/release/babeinlovexd/insane-soundbar?style=for-the-badge&color=2ecc71" alt="Latest Release"></a>
-<img src="https://img.shields.io/badge/Hardware-V0.0.0-f39c12?style=for-the-badge&logo=pcb" alt="Hardware Version">
+<img src="https://img.shields.io/badge/Hardware-V1.0.0-green?style=for-the-badge&logo=pcb" alt="Hardware Version">
 <img src="https://img.shields.io/badge/Status-BETA-ff9800?style=for-the-badge&logo=test-tube" alt="Status: Beta">
 <img src="https://img.shields.io/badge/Updates-OTA_Ready-4caf50?style=for-the-badge&logo=wi-fi" alt="OTA Ready">
 
@@ -60,19 +60,109 @@ Vier ESP32-Kerne und ein RP2354-Hardware-DSP für verlustfreien Klang und volle 
 
 ---
 
-<img src="https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=for-the-badge&logo=creative-commons" alt="License: CC BY-NC-SA 4.0">
+<a href="LICENSE.md#1-hardware-schematics--documentation"><img src="https://img.shields.io/badge/Hardware-CC%20BY--NC--SA%204.0-blue?style=for-the-badge&logo=creative-commons&logoColor=white" alt="Hardware License: CC BY-NC-SA 4.0"></a>
+<a href="LICENSE.md#2-software--firmware-source-code"><img src="https://img.shields.io/badge/Software-MIT-blue?style=for-the-badge&logo=github&logoColor=white" alt="Software License: MIT"></a>
 
 ---
 
+```mermaid
+graph TD
+    %% Styling Definitionen
+    classDef appStyle fill:#d35400,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef haStyle fill:#41BDF5,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef espStyle fill:#34495E,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef piStyle fill:#8A2BE2,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef hardwareStyle fill:#7F8C8D,stroke:#fff,stroke-width:1px,color:#fff;
+    classDef chassisStyle fill:#2C3E50,stroke:#fff,stroke-width:1px,color:#fff,stroke-dasharray: 5 5;
+
+    %% --- LAYER 1: CONTROL INLETS ---
+    subgraph Layer_Control [1. Control & Smart Home]
+        App[Insane Control Center<br/>Python App]:::appStyle
+        HA[Home Assistant<br/>ESPHome Native API]:::haStyle
+    end
+
+    %% --- LAYER 2: SYSTEM ORCHESTRATION ---
+    subgraph Layer_Master [2. System Master]
+        Master[Master MCU<br/>ESP32-S3]:::espStyle
+    end
+
+    %% --- LAYER 3: AUDIO INPUT SOURCES ---
+    subgraph Layer_Inputs [3. Audio Inputs]
+        BTRX[Bluetooth Receiver<br/>ESP32]:::espStyle
+        AuxIn[AUX In<br/>3.5mm Klinke]:::hardwareStyle
+        ADC_Aux[AUX ADC<br/>PCM1808]:::hardwareStyle
+        TosIn[Toslink In<br/>Optisch S/PDIF]:::hardwareStyle
+    end
+
+    %% --- LAYER 4: DIGITAL SIGNAL PROCESSING ---
+    subgraph Layer_DSP [4. Digital Signal Processing]
+        DSP[Audio DSP<br/>RP2354]:::piStyle
+    end
+
+    %% --- LAYER 5: AUDIO OUTPUT DISTRIBUTION ---
+    subgraph Layer_Outputs [5. Audio Outputs & Transmission]
+        DAC_Main[DACs<br/>PCM5102A]:::hardwareStyle
+        SUBTX[Subwoofer TX<br/>ESP32]:::espStyle
+    end
+
+    %% --- LAYER 6: AMPLIFICATION & WIRELESS RX ---
+    subgraph Layer_Amps [6. Amplification & Wireless Sub]
+        Amp_Mid[Amp Middle<br/>TPA Class-D]:::hardwareStyle
+        Amp_High[Amp High<br/>TPA Class-D]:::hardwareStyle
+        SUBRX[Subwoofer RX<br/>ESP32]:::espStyle
+        DAC_Sub[DAC<br/>PCM5102A]:::hardwareStyle
+        Amp_Sub[Amp Sub<br/>TPA Class-D]:::hardwareStyle
+    end
+
+    %% --- LAYER 7: SPEAKER CHASSIS ---
+    subgraph Layer_Chassis [7. Acoustic Speakers]
+        Chassis_Mid((Dayton<br/>CE70PR-4)):::chassisStyle
+        Chassis_High((Dayton<br/>ND25FA-4)):::chassisStyle
+        Chassis_Sub((Dayton<br/>DCS205-4)):::chassisStyle
+        PR_Sub((Dayton<br/>DSA215-PR)):::chassisStyle
+    end
+
+    %% --- INFRASTRUCTURE CONNECTIONS (STRICT FLOW) ---
+    
+    %% Control Connections
+    App <-->|Wi-Fi / TCP| Master
+    HA <-->|Wi-Fi| Master
+
+    %% Master Flash & Control Bus (Left & Right Outskirts)
+    Master -.->|I2C & UART Flasher| BTRX
+    Master -.->|I2C & UART Flasher| DSP
+    Master -.->|I2C & UART Flasher| SUBTX
+
+    %% Input Routing to DSP
+    Master -->|I2S / WebRadio| DSP
+    BTRX -->|I2S Audio| DSP
+    AuxIn -->|Analog| ADC_Aux
+    ADC_Aux -->|I2S Audio| DSP
+    TosIn -->|Digital S/PDIF| DSP
+
+    %% DSP Routing to Outputs
+    DSP -->|I2S Mid / High| DAC_Main
+    DSP -->|I2S Sub-Channel| SUBTX
+
+    %% Wireless Subwoofer Link
+    SUBTX ==>|Wireless Audio Link| SUBRX
+
+    %% Amplification Soundbar
+    DAC_Main -->|Analog Left/Right| Amp_Mid
+    DAC_Main -->|Analog Left/Right| Amp_High
+    Amp_Mid -->|Speaker Wire| Chassis_Mid
+    Amp_High -->|Speaker Wire| Chassis_High
+
+    %% Amplification Subwoofer
+    SUBRX -->|I2S Audio| DAC_Sub
+    DAC_Sub -->|Analog| Amp_Sub
+    Amp_Sub -->|Speaker Wire| Chassis_Sub
+    Chassis_Sub ---|Acoustic Coupling| PR_Sub
+```
+    
 <img src="PCB/ISB/3D.png" alt="ISB Platine" width="500">
 <img src="PCB/ISB_SUB/3D.png" alt="Subwoofer Platine" width="500">
 <img src="PCB/Flashcore/3D.png" alt="Flashcore Platine" width="500">
-
----
-
-## ⚖️ Lizenz
-Dieses komplette Projekt (Hardware und Software) steht unter der [CC BY-NC-SA 4.0 Lizenz](https://creativecommons.org/licenses/by-nc-sa/4.0/). 
-Das bedeutet: Nachbauen und Anpassen für private Zwecke ist ausdrücklich erwünscht, jede kommerzielle Nutzung oder der Verkauf sind strikt verboten!
 
 ---
 
