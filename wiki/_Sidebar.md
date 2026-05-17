@@ -1,0 +1,7 @@
+* [Home](Home.md)
+* [System Architektur](Architektur.md)
+* [Hardware Specs](Hardware.md)
+* [Firmware](Firmware.md)
+* [Kommunikation & APIs](Kommunikation.md)
+* [Software & Tools](Software.md)
+* [Subwoofer Link](Subwoofer_Link.md)
