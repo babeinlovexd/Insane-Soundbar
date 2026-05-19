@@ -17,6 +17,8 @@ esphome:
             id(isb_orchestrator_inst)->set_bt_version((esphome::template_::TemplateTextSensor*)id(bt_version));
             id(isb_orchestrator_inst)->set_sub_version((esphome::template_::TemplateTextSensor*)id(sub_version));
             id(isb_orchestrator_inst)->set_dsp_temp((esphome::template_::TemplateSensor*)id(dsp_temp));
+            id(isb_orchestrator_inst)->set_sub_rssi((esphome::template_::TemplateSensor*)id(sub_rssi));
+            id(isb_orchestrator_inst)->set_sub_delay((esphome::template_::TemplateSensor*)id(sub_delay));
     - priority: 600
       then:
         - light.turn_on:
@@ -93,6 +95,10 @@ web_server:
   port: 80
 
 text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+
   - platform: template
     name: "Slave Versions JSON"
     id: slave_versions
@@ -448,6 +454,27 @@ select:
 
 button:
   - platform: template
+    name: "Media Play"
+    icon: "mdi:play"
+    on_press:
+      - lambda: 'id(isb_orchestrator_inst).send_media_command(0x01);'
+  - platform: template
+    name: "Media Pause"
+    icon: "mdi:pause"
+    on_press:
+      - lambda: 'id(isb_orchestrator_inst).send_media_command(0x02);'
+  - platform: template
+    name: "Media Next"
+    icon: "mdi:skip-next"
+    on_press:
+      - lambda: 'id(isb_orchestrator_inst).send_media_command(0x03);'
+  - platform: template
+    name: "Media Prev"
+    icon: "mdi:skip-previous"
+    on_press:
+      - lambda: 'id(isb_orchestrator_inst).send_media_command(0x04);'
+
+  - platform: template
     name: "Alle IR-Codes löschen"
     id: btn_clear_ir
     icon: "mdi:delete-sweep"
@@ -524,14 +551,40 @@ binary_sensor:
     id: tpa_fault_sensor
     device_class: problem
     entity_category: diagnostic
+  - platform: template
+    name: "Mute Status"
+    id: mute_status
+    lambda: |-
+      return id(isb_orchestrator_inst).is_muted();
+
+debug:
 
 sensor:
+  - platform: uptime
+    name: "System Uptime"
+    id: system_uptime
+  - platform: wifi_signal
+    name: "WLAN Signal"
+    update_interval: 60s
+  - platform: debug
+    free:
+      name: "Free RAM"
   - platform: internal_temperature
     name: "Master Temperature"
   - platform: template
     name: "DSP Temperature"
     id: dsp_temp
     unit_of_measurement: "°C"
+    accuracy_decimals: 0
+  - platform: template
+    name: "Subwoofer RSSI"
+    id: sub_rssi
+    unit_of_measurement: "dBm"
+    accuracy_decimals: 0
+  - platform: template
+    name: "Subwoofer Buffer Delay"
+    id: sub_delay
+    unit_of_measurement: "ms"
     accuracy_decimals: 0
 
 switch:

@@ -70,12 +70,32 @@ class ISBOrchestrator : public Component {
   esphome::template_::TemplateTextSensor *bt_version_{nullptr};
   esphome::template_::TemplateTextSensor *sub_version_{nullptr};
   esphome::template_::TemplateSensor *dsp_temp_{nullptr};
+  esphome::template_::TemplateSensor *sub_rssi_{nullptr};
+  esphome::template_::TemplateSensor *sub_delay_{nullptr};
 
   void set_master_volume(esphome::template_::TemplateNumber *master_volume) { master_volume_ = master_volume; }
   void set_dsp_version(esphome::template_::TemplateTextSensor *dsp_version) { dsp_version_ = dsp_version; }
   void set_bt_version(esphome::template_::TemplateTextSensor *bt_version) { bt_version_ = bt_version; }
   void set_sub_version(esphome::template_::TemplateTextSensor *sub_version) { sub_version_ = sub_version; }
   void set_dsp_temp(esphome::template_::TemplateSensor *dsp_temp) { dsp_temp_ = dsp_temp; }
+  void set_sub_rssi(esphome::template_::TemplateSensor *sub_rssi) { sub_rssi_ = sub_rssi; }
+  void set_sub_delay(esphome::template_::TemplateSensor *sub_delay) { sub_delay_ = sub_delay; }
+
+  uint8_t get_sub_rssi() {
+    uint8_t reg = 0x02;
+    uint8_t val = 0;
+    i2c_bus_->write(SUB_I2C_ADDR, &reg, 1);
+    i2c_bus_->read(SUB_I2C_ADDR, &val, 1);
+    return val;
+  }
+
+  uint8_t get_sub_delay() {
+    uint8_t reg = 0x03;
+    uint8_t val = 0;
+    i2c_bus_->write(SUB_I2C_ADDR, &reg, 1);
+    i2c_bus_->read(SUB_I2C_ADDR, &val, 1);
+    return val;
+  }
 
   void setup() override {
     // 1. Send MUTE to DSP immediately
@@ -313,13 +333,13 @@ class ISBOrchestrator : public Component {
           uint8_t new_vol = std::max((int)0, (int)current_volume - 5);
           set_dsp_volume(new_vol);
           if (master_volume_) master_volume_->publish_state(new_vol);
-        } else if (action == "Play") {
+        } else if (action == "Play" || action == "Media Play") {
           send_media_command(0x01);
-        } else if (action == "Pause") {
+        } else if (action == "Pause" || action == "Media Pause") {
           send_media_command(0x02);
-        } else if (action == "Next") {
+        } else if (action == "Next" || action == "Media Next") {
           send_media_command(0x03);
-        } else if (action == "Prev") {
+        } else if (action == "Prev" || action == "Media Prev") {
           send_media_command(0x04);
         }
       } else {
@@ -329,9 +349,16 @@ class ISBOrchestrator : public Component {
   }
 
   void send_media_command(uint8_t cmd) {
-    uint8_t data[2] = {0x10, cmd};
-    i2c_bus_->write(BT_I2C_ADDR, data, 2);
-    ESP_LOGI("ISB_ORCH", "Sent Media Command %d to BT Module", cmd);
+    uint8_t bt_cmd = 0;
+    if (cmd == 0x01 || cmd == 0x02) bt_cmd = 1;
+    else if (cmd == 0x03) bt_cmd = 2;
+    else if (cmd == 0x04) bt_cmd = 3;
+
+    if (bt_cmd != 0) {
+        uint8_t data[2] = {0x0A, bt_cmd};
+        i2c_bus_->write(BT_I2C_ADDR, data, 2);
+        ESP_LOGI("ISB_ORCH", "Sent Media Command %d (mapped to %d) to BT Module", cmd, bt_cmd);
+    }
   }
 
   void enable_learn_mode(std::string target) {
@@ -400,6 +427,18 @@ class ISBOrchestrator : public Component {
       // Temperatur
       uint8_t temp = get_dsp_temp();
       if (dsp_temp_) dsp_temp_->publish_state(temp);
+
+      // Subwoofer
+      if (sub_rssi_) {
+          int raw_rssi = get_sub_rssi();
+          if (raw_rssi > 0) {
+              sub_rssi_->publish_state(raw_rssi - 100);
+          } else {
+              sub_rssi_->publish_state(NAN);
+          }
+      }
+
+      if (sub_delay_) sub_delay_->publish_state(get_sub_delay());
     }
   }
 };

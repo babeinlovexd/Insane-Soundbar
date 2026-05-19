@@ -118,6 +118,9 @@ class InsaneControlCenter(ctk.CTk):
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.header_frame.pack(pady=(20, 10))
 
+        self.theme_btn = ctk.CTkButton(self.header_frame, text="🌓", width=30, height=30, corner_radius=15, fg_color="#30363d", hover_color="#8b949e", command=self.toggle_theme)
+        self.theme_btn.grid(row=0, column=3, padx=(20, 0), sticky="ne")
+
         try:
             logo_path = resource_path("logo.png")
             logo_image = ctk.CTkImage(light_image=Image.open(logo_path), dark_image=Image.open(logo_path), size=(80, 80))
@@ -212,6 +215,92 @@ class InsaneControlCenter(ctk.CTk):
         self.load_favorites()
         self.start_scan()
 
+    def apply_preset(self, preset):
+        # Kino, Musik, Gaming, Flat
+        settings = {}
+        if preset == "kino":
+            settings = {
+                "EQ 100 Hz (Bass)": 14,
+                "EQ 300 Hz (Low-Mid)": 10,
+                "EQ 1 kHz (Mid)": 10,
+                "EQ 3 kHz (High-Mid)": 12,
+                "EQ 8 kHz (Treble)": 12,
+                "Sub Trim": 14,
+                "Clear Voice": True
+            }
+        elif preset == "musik":
+            settings = {
+                "EQ 100 Hz (Bass)": 12,
+                "EQ 300 Hz (Low-Mid)": 10,
+                "EQ 1 kHz (Mid)": 10,
+                "EQ 3 kHz (High-Mid)": 11,
+                "EQ 8 kHz (Treble)": 11,
+                "Sub Trim": 12,
+                "Clear Voice": False
+            }
+        elif preset == "gaming":
+            settings = {
+                "EQ 100 Hz (Bass)": 15,
+                "EQ 300 Hz (Low-Mid)": 11,
+                "EQ 1 kHz (Mid)": 9,
+                "EQ 3 kHz (High-Mid)": 12,
+                "EQ 8 kHz (Treble)": 13,
+                "Sub Trim": 15,
+                "Clear Voice": True
+            }
+        elif preset == "flat":
+            settings = {
+                "EQ 100 Hz (Bass)": 10,
+                "EQ 300 Hz (Low-Mid)": 10,
+                "EQ 1 kHz (Mid)": 10,
+                "EQ 3 kHz (High-Mid)": 10,
+                "EQ 8 kHz (Treble)": 10,
+                "Sub Trim": 10,
+                "Clear Voice": False
+            }
+
+        for k, v in settings.items():
+            if type(v) == bool:
+                self.send_switch_value(k, v)
+                # Update UI switch if it matches
+                if k == "Clear Voice":
+                    self.switch_clear_voice.select() if v else self.switch_clear_voice.deselect()
+            else:
+                self.send_number_value(k, v)
+                if k == "Sub Trim": self.sub_trim.set(v)
+                if k == "EQ 100 Hz (Bass)": getattr(self, "eq_b1", ctk.CTkSlider(self)).set(v)
+                if k == "EQ 300 Hz (Low-Mid)": getattr(self, "eq_b2", ctk.CTkSlider(self)).set(v)
+                if k == "EQ 1 kHz (Mid)": getattr(self, "eq_b3", ctk.CTkSlider(self)).set(v)
+                if k == "EQ 3 kHz (High-Mid)": getattr(self, "eq_b4", ctk.CTkSlider(self)).set(v)
+                if k == "EQ 8 kHz (Treble)": getattr(self, "eq_b5", ctk.CTkSlider(self)).set(v)
+
+    def toggle_theme(self):
+        current = ctk.get_appearance_mode()
+        if current == "Dark":
+            ctk.set_appearance_mode("light")
+            self.configure(fg_color="#f0f0f0")
+            self.dev_ctrl_frame.configure(fg_color="#ffffff", border_color="#cccccc")
+            self.device_dropdown.configure(fg_color="#f0f0f0", button_color="#e0e0e0", button_hover_color="#d0d0d0")
+            self.tabview.configure(segmented_button_fg_color="#ffffff", segmented_button_unselected_color="#ffffff", segmented_button_unselected_hover_color="#e0e0e0", text_color="#000000")
+            self.info_grid.configure(fg_color="#ffffff")
+            self.vol_mute_container.configure(fg_color="#ffffff")
+            self.sec_btrx.configure(fg_color="#ffffff", border_color="#cccccc")
+            self.sec_subtx.configure(fg_color="#ffffff", border_color="#cccccc")
+            self.sec_rp.configure(fg_color="#ffffff", border_color="#cccccc")
+            self.title_label.configure(text_color="#000000")
+        else:
+            ctk.set_appearance_mode("dark")
+            self.configure(fg_color="#0d1117")
+            self.dev_ctrl_frame.configure(fg_color="#161b22", border_color="#30363d")
+            self.device_dropdown.configure(fg_color="#0d1117", button_color="#21262d", button_hover_color="#30363d")
+            self.tabview.configure(segmented_button_fg_color="#161b22", segmented_button_unselected_color="#161b22", segmented_button_unselected_hover_color="#30363d", text_color="#c9d1d9")
+            self.info_grid.configure(fg_color="#0d1117")
+            self.vol_mute_container.configure(fg_color="#161b22")
+            self.sec_btrx.configure(fg_color="#161b22", border_color="#30363d")
+            self.sec_subtx.configure(fg_color="#161b22", border_color="#30363d")
+            self.sec_rp.configure(fg_color="#161b22", border_color="#30363d")
+            self.title_label.configure(text_color="#c9d1d9")
+
     def setup_tab_tele(self):
         self.info_grid = ctk.CTkFrame(self.tab_tele, fg_color="#0d1117", corner_radius=10)
         self.info_grid.pack(pady=15, padx=20, fill="both", expand=True)
@@ -244,7 +333,21 @@ class InsaneControlCenter(ctk.CTk):
 
         self.val_sub_conn = create_stat(2, 0, "SUB CONN")
         self.val_bl_conn = create_stat(2, 1, "BT CONN")
-        self.val_dummy = create_stat(2, 2, "")
+        self.val_sub_rssi = create_stat(2, 2, "SUB RSSI")
+
+        self.val_sub_delay = create_stat(3, 0, "WIRELESS LATENCY")
+        self.val_uptime = create_stat(3, 1, "UPTIME")
+        self.val_ram = create_stat(3, 2, "FREE RAM")
+
+        # Live Volume and Mute in Telemetry
+        self.vol_mute_container = ctk.CTkFrame(self.tab_tele, fg_color="#161b22", corner_radius=10)
+        self.vol_mute_container.pack(pady=10, padx=20, fill="x")
+        self.lbl_tele_vol = ctk.CTkLabel(self.vol_mute_container, text="Lautstärke: -", font=("Roboto", 16, "bold"), text_color="#3498db")
+        self.lbl_tele_vol.pack(side="left", padx=20, pady=10)
+        self.lbl_tele_mute = ctk.CTkLabel(self.vol_mute_container, text="Stumm: -", font=("Roboto", 16, "bold"), text_color="#e74c3c")
+        self.lbl_tele_mute.pack(side="right", padx=20, pady=10)
+
+        self.val_dummy = create_stat(4, 0, "") # Fallback dummy
 
     def setup_tab_upd(self):
         # Mache den ganzen Updates Tab scrollbar
@@ -414,6 +517,18 @@ class InsaneControlCenter(ctk.CTk):
         scroll_frame = ctk.CTkScrollableFrame(self.tab_ctrl, fg_color="transparent")
         scroll_frame.pack(fill="both", expand=True)
 
+        # --- SOUND PRESETS ---
+        ctk.CTkLabel(scroll_frame, text="Quick Presets", font=("Roboto", 18, "bold"), text_color="#1abc9c").pack(pady=(10, 5))
+        preset_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        preset_frame.pack(pady=5, fill="x", padx=40)
+        preset_btn_container = ctk.CTkFrame(preset_frame, fg_color="transparent")
+        preset_btn_container.pack(expand=True)
+
+        ctk.CTkButton(preset_btn_container, text="Kino", width=70, fg_color="#1abc9c", hover_color="#16a085", command=lambda: self.apply_preset("kino")).pack(side="left", padx=5)
+        ctk.CTkButton(preset_btn_container, text="Musik", width=70, fg_color="#1abc9c", hover_color="#16a085", command=lambda: self.apply_preset("musik")).pack(side="left", padx=5)
+        ctk.CTkButton(preset_btn_container, text="Gaming", width=70, fg_color="#1abc9c", hover_color="#16a085", command=lambda: self.apply_preset("gaming")).pack(side="left", padx=5)
+        ctk.CTkButton(preset_btn_container, text="Flat", width=70, fg_color="#1abc9c", hover_color="#16a085", command=lambda: self.apply_preset("flat")).pack(side="left", padx=5)
+
         # --- SYSTEM STEUERUNG ---
         ctk.CTkLabel(scroll_frame, text="System", font=("Roboto", 20, "bold"), text_color="#2f81f7").pack(pady=(10, 10))
 
@@ -453,6 +568,22 @@ class InsaneControlCenter(ctk.CTk):
 
         # Helper to create slider with live value label
 
+        # --- MEDIA CONTROLS ---
+        ctk.CTkLabel(scroll_frame, text="Bluetooth Media Controls", font=("Roboto", 18, "bold"), text_color="#9b59b6").pack(pady=(20, 10))
+        media_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        media_frame.pack(pady=5, fill="x", padx=40)
+        media_btn_container = ctk.CTkFrame(media_frame, fg_color="transparent")
+        media_btn_container.pack(expand=True)
+
+        encoded_prev = urllib.parse.quote("Media Prev")
+        ctk.CTkButton(media_btn_container, text="⏮ Prev", width=80, height=40, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_prev}/press")).pack(side="left", padx=5)
+        encoded_play = urllib.parse.quote("Media Play")
+        ctk.CTkButton(media_btn_container, text="▶ Play", width=80, height=40, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_play}/press")).pack(side="left", padx=5)
+        encoded_pause = urllib.parse.quote("Media Pause")
+        ctk.CTkButton(media_btn_container, text="⏸ Pause", width=80, height=40, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_pause}/press")).pack(side="left", padx=5)
+        encoded_next = urllib.parse.quote("Media Next")
+        ctk.CTkButton(media_btn_container, text="⏭ Next", width=80, height=40, fg_color="#8e44ad", hover_color="#732d91", command=lambda: self.send_action(f"button/{encoded_next}/press")).pack(side="left", padx=5)
+
         # --- AUDIO ENHANCEMENTS ---
         ctk.CTkLabel(scroll_frame, text="Audio Verbesserungen", font=("Roboto", 18, "bold"), text_color="#f1c40f").pack(pady=(20, 10))
         enh_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
@@ -491,6 +622,12 @@ class InsaneControlCenter(ctk.CTk):
         self.mid_lp = self.create_live_slider(cross_frame, "Mid LP Crossover", 500, 10000, 95, "Mid LP Crossover", "#e67e22", "#d35400", 3500)
         self.high_hp = self.create_live_slider(cross_frame, "High HP Crossover", 500, 10000, 95, "High HP Crossover", "#e67e22", "#d35400", 3500)
 
+        # --- BACKUP / RESTORE ---
+        backup_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        backup_frame.pack(pady=5, fill="x", padx=40)
+        ctk.CTkButton(backup_frame, text="Backup Settings", width=120, command=self.backup_settings).pack(side="left", padx=5)
+        ctk.CTkButton(backup_frame, text="Restore Settings", width=120, command=self.restore_settings).pack(side="left", padx=5)
+
         # --- EQ ---
         ctk.CTkLabel(scroll_frame, text="Equalizer", font=("Roboto", 18, "bold"), text_color="#e3b341").pack(pady=(20, 10))
         eq_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
@@ -500,18 +637,59 @@ class InsaneControlCenter(ctk.CTk):
         self.mid_trim = self.create_live_slider(eq_frame, "Mid Trim", 0, 20, 20, "Mid Trim", "#f1c40f", "#f39c12", 10)
         self.high_trim = self.create_live_slider(eq_frame, "High Trim", 0, 20, 20, "High Trim", "#f1c40f", "#f39c12", 4)
 
-        bands = [
-            ("EQ 100 Hz (Bass)", "EQ 100 Hz (Bass)"),
-            ("EQ 300 Hz (Low-Mid)", "EQ 300 Hz (Low-Mid)"),
-            ("EQ 1 kHz (Mid)", "EQ 1 kHz (Mid)"),
-            ("EQ 3 kHz (High-Mid)", "EQ 3 kHz (High-Mid)"),
-            ("EQ 8 kHz (Treble)", "EQ 8 kHz (Treble)")
-        ]
+        self.eq_b1 = self.create_live_slider(eq_frame, "EQ 100 Hz (Bass)", 0, 20, 20, "EQ 100 Hz (Bass)", "#f1c40f", "#f39c12", 10)
+        self.eq_b2 = self.create_live_slider(eq_frame, "EQ 300 Hz (Low-Mid)", 0, 20, 20, "EQ 300 Hz (Low-Mid)", "#f1c40f", "#f39c12", 10)
+        self.eq_b3 = self.create_live_slider(eq_frame, "EQ 1 kHz (Mid)", 0, 20, 20, "EQ 1 kHz (Mid)", "#f1c40f", "#f39c12", 10)
+        self.eq_b4 = self.create_live_slider(eq_frame, "EQ 3 kHz (High-Mid)", 0, 20, 20, "EQ 3 kHz (High-Mid)", "#f1c40f", "#f39c12", 10)
+        self.eq_b5 = self.create_live_slider(eq_frame, "EQ 8 kHz (Treble)", 0, 20, 20, "EQ 8 kHz (Treble)", "#f1c40f", "#f39c12", 10)
+        self.eq_sliders = [self.eq_b1, self.eq_b2, self.eq_b3, self.eq_b4, self.eq_b5]
 
-        self.eq_sliders = []
-        for label, entity in bands:
-            sl = self.create_live_slider(eq_frame, label, 0, 20, 20, entity, "#f1c40f", "#f39c12", 10)
-            self.eq_sliders.append(sl)
+    def backup_settings(self):
+        import tkinter.filedialog
+        import json
+        file_path = tkinter.filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+        if not file_path: return
+        settings = {
+            "EQ 100 Hz (Bass)": self.eq_b1.get(),
+            "EQ 300 Hz (Low-Mid)": self.eq_b2.get(),
+            "EQ 1 kHz (Mid)": self.eq_b3.get(),
+            "EQ 3 kHz (High-Mid)": self.eq_b4.get(),
+            "EQ 8 kHz (Treble)": self.eq_b5.get(),
+            "Sub Trim": self.sub_trim.get(),
+            "Mid Trim": self.mid_trim.get(),
+            "High Trim": self.high_trim.get(),
+            "Sub LP Crossover": self.sub_lp.get(),
+            "Sat HP Crossover": self.sat_hp.get(),
+            "Mid LP Crossover": self.mid_lp.get(),
+            "High HP Crossover": self.high_hp.get()
+        }
+        with open(file_path, "w") as f:
+            json.dump(settings, f, indent=4)
+
+    def restore_settings(self):
+        import tkinter.filedialog
+        import json
+        file_path = tkinter.filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
+        if not file_path: return
+        with open(file_path, "r") as f:
+            try:
+                settings = json.load(f)
+                for k, v in settings.items():
+                    self.send_number_value(k, v)
+                    if k == "Sub Trim": self.sub_trim.set(v)
+                    if k == "Mid Trim": self.mid_trim.set(v)
+                    if k == "High Trim": self.high_trim.set(v)
+                    if k == "Sub LP Crossover": self.sub_lp.set(v)
+                    if k == "Sat HP Crossover": self.sat_hp.set(v)
+                    if k == "Mid LP Crossover": self.mid_lp.set(v)
+                    if k == "High HP Crossover": self.high_hp.set(v)
+                    if k == "EQ 100 Hz (Bass)": self.eq_b1.set(v)
+                    if k == "EQ 300 Hz (Low-Mid)": self.eq_b2.set(v)
+                    if k == "EQ 1 kHz (Mid)": self.eq_b3.set(v)
+                    if k == "EQ 3 kHz (High-Mid)": self.eq_b4.set(v)
+                    if k == "EQ 8 kHz (Treble)": self.eq_b5.set(v)
+            except Exception as e:
+                pass
 
     def send_action(self, endpoint):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
@@ -689,6 +867,16 @@ class InsaneControlCenter(ctk.CTk):
         btrx_version = get_state("text_sensor", "BT Version")
         subtx_version = get_state("text_sensor", "SUB Version")
         rp_version = get_state("text_sensor", "DSP Version")
+
+        # New Metrics
+        sub_rssi = get_state("sensor", "Subwoofer RSSI")
+        sub_delay = get_state("sensor", "Subwoofer Buffer Delay")
+        uptime = get_state("sensor", "System Uptime")
+        ram = get_state("sensor", "Free RAM")
+        ip_addr = get_state("text_sensor", "IP Address")
+        vol_level = get_state("number", "Master Volume")
+        is_muted = get_state("binary_sensor", "Mute Status")
+
         # For BT Conn and SUB Conn, they are inferred from version presence or specific binary_sensors if they exist
         # We know "subwoofer_connected" might be a binary sensor from previous step, but let's check BT as well.
         # Actually, if we don't know, we can fall back to checking if the version string is present!
@@ -710,10 +898,10 @@ class InsaneControlCenter(ctk.CTk):
             except:
                 self.online_version = None
 
-        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn)
+        self.after(0, self._update_dashboard_ui, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn, sub_rssi, sub_delay, uptime, ram, ip_addr, vol_level, is_muted)
         self.after(0, lambda: self.check_for_updates(btrx_version, subtx_version, rp_version))
 
-    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn):
+    def _update_dashboard_ui(self, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn, sub_rssi, sub_delay, uptime, ram, ip_addr, vol_level, is_muted):
         def set_val(lbl, text, color="#ffffff"):
             if lbl != self.val_dummy:
                 lbl.configure(text=str(text), text_color=color)
@@ -727,7 +915,11 @@ class InsaneControlCenter(ctk.CTk):
 
         set_val(self.val_src, src, "#3498db")
         set_val(self.val_sys, sys_status.upper() if sys_status != "Offline" else "N/A", "#2ecc71" if sys_status == "ON" else "#888888")
-        set_val(self.val_wifi, f"{wifi} dBm" if wifi != "Offline" else wifi)
+
+        if wifi != "Offline" and ip_addr != "Offline" and ip_addr != "N/A":
+            set_val(self.val_wifi, f"{wifi} dBm\n{ip_addr}")
+        else:
+            set_val(self.val_wifi, f"{wifi} dBm" if wifi != "Offline" else wifi)
 
         def parse_temp(val):
             try: return float(val), f"{val} °C"
@@ -753,6 +945,18 @@ class InsaneControlCenter(ctk.CTk):
         is_sub_conn = sub_conn != "Offline" and sub_conn != "N/A"
         set_val(self.val_sub_conn, "VERBUNDEN" if is_sub_conn else "GETRENNT", "#e67e22" if is_sub_conn else "#888888")
 
+        set_val(self.val_sub_rssi, f"{sub_rssi} dBm" if sub_rssi != "Offline" and sub_rssi != "N/A" else "N/A", "#3498db" if sub_rssi != "Offline" else "#888888")
+        set_val(self.val_sub_delay, f"{sub_delay} ms" if sub_delay != "Offline" and sub_delay != "N/A" else "N/A")
+        set_val(self.val_uptime, f"{uptime} s" if uptime != "Offline" and uptime != "N/A" else "N/A")
+        set_val(self.val_ram, f"{ram} Bytes" if ram != "Offline" and ram != "N/A" else "N/A")
+
+        if vol_level != "Offline":
+            self.lbl_tele_vol.configure(text=f"Lautstärke: {vol_level}")
+
+        if is_muted == "ON":
+             self.lbl_tele_mute.configure(text="Stumm: JA", text_color="#e74c3c")
+        elif is_muted == "OFF":
+             self.lbl_tele_mute.configure(text="Stumm: NEIN", text_color="#2ecc71")
 
         self.is_fetching = False
 
