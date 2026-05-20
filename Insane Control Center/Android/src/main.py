@@ -335,7 +335,7 @@ async def main(page: ft.Page):
 
     # --- UI Definitions ---
     # FilePickers for Backup/Restore
-    async def save_backup_result(e: ft.FilePickerResultEvent):
+    async def save_backup_result(e):
         if not e.path: return
         settings = {
             "EQ 100 Hz (Bass)": int(sliders_refs.get("EQ 100 Hz (Bass)").value) if "EQ 100 Hz (Bass)" in sliders_refs else 10,
@@ -356,7 +356,7 @@ async def main(page: ft.Page):
             json.dump(settings, f, indent=4)
         await show_snackbar("Backup gespeichert!")
 
-    async def pick_restore_result(e: ft.FilePickerResultEvent):
+    async def pick_restore_result(e):
         if not e.files or len(e.files) == 0: return
         try:
             import json
@@ -371,8 +371,8 @@ async def main(page: ft.Page):
         except Exception as ex:
             await show_snackbar(f"Fehler: {ex}", is_error=True)
 
-    save_file_dialog = ft.FilePicker(on_result=save_backup_result)
-    pick_file_dialog = ft.FilePicker(on_result=pick_restore_result)
+    save_file_dialog = ft.FilePicker(); save_file_dialog.on_result = save_backup_result
+    pick_file_dialog = ft.FilePicker(); pick_file_dialog.on_result = pick_restore_result
     page.overlay.extend([save_file_dialog, pick_file_dialog])
 
     status_dot = ft.Text("●", size=20, color="#444444")
