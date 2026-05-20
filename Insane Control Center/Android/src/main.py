@@ -13,29 +13,8 @@ from zeroconf import ServiceBrowser, Zeroconf
 
 # Suppress Flet deprecation warnings due to client/server version mismatch
 warnings.simplefilter("ignore", DeprecationWarning)
-import esptool
-import io
-import contextlib
 
-GITHUB_API_LATEST = "https://api.github.com/repos/babeinlovexd/Insane-Sound-System/releases/latest"
 GITHUB_URL = "https://github.com/babeinlovexd/Insane-Soundbar"
-GITHUB_AUTHOR_URL = "https://github.com/babeinlovexd"
-UPDATE_CHECK_INTERVAL = 3600
-
-class ConsoleRedirector(io.StringIO):
-    def __init__(self, callback):
-        super().__init__()
-        self.callback = callback
-        self.output_buffer = ""
-
-    def write(self, string):
-        self.output_buffer += string
-        if '\r' in self.output_buffer or '\n' in self.output_buffer:
-            lines = self.output_buffer.replace('\r', '\n').split('\n')
-            for line in lines[:-1]:
-                if "Writing at" in line:
-                    self.callback(line.strip())
-            self.output_buffer = lines[-1]
 
 class DeviceListener:
     def __init__(self, callback):
@@ -77,11 +56,6 @@ async def main(page: ft.Page):
     log_running = False
     current_log_ip = None
     browser: ServiceBrowser | None = None
-    
-    online_version = None
-    last_update_check = 0
-    github_assets = []
-
     # --- UI Helper & Callbacks ---
     async def show_snackbar(message, is_error=False):
         page.snack_bar = ft.SnackBar(ft.Text(str(message)), bgcolor="red" if is_error else "green")
@@ -230,23 +204,6 @@ async def main(page: ft.Page):
         except Exception as e:
             if log_running: page.run_task(log, f"Log-Verbindung getrennt: {e}")
 
-    async def check_for_updates(btrx_version, subtx_version, rp_version):
-        btrx_fw_label.value = f"Aktuelle Version: [{btrx_version}]" if btrx_version not in ["N/A", "Offline"] else f"Aktuelle Version: Offline"
-        subtx_fw_label.value = f"Aktuelle Version: [{subtx_version}]" if subtx_version not in ["N/A", "Offline"] else f"Aktuelle Version: Offline"
-        rp_fw_label.value = f"Aktuelle Version: [{rp_version}]" if rp_version not in ["N/A", "Offline"] else f"Aktuelle Version: Offline"
-        if online_version:
-            if btrx_version != online_version and btrx_version != "Offline":
-                btrx_flash_btn.bgcolor = "#e74c3c"; btrx_flash_btn.text = "BT_RX UPDATE INSTALLIEREN"
-            else:
-                btrx_flash_btn.bgcolor = "#7a1a1a"; btrx_flash_btn.text = "BT_RX UPDATE"
-            if subtx_version != online_version and subtx_version != "Offline":
-                subtx_flash_btn.bgcolor = "#e74c3c"; subtx_flash_btn.text = "SUB_TX UPDATE INSTALLIEREN"
-            else:
-                subtx_flash_btn.bgcolor = "#7a1a1a"; subtx_flash_btn.text = "SUB_TX UPDATE"
-            if rp_version != online_version and rp_version != "Offline":
-                rp_flash_btn.bgcolor = "#e74c3c"; rp_flash_btn.text = "RP2354 UPDATE INSTALLIEREN"
-            else:
-                rp_flash_btn.bgcolor = "#7a1a1a"; rp_flash_btn.text = "RP2354 UPDATE"
 
     async def _update_dashboard_ui(src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn):
         is_online = src != "Offline" and wifi != "Offline"
@@ -279,6 +236,7 @@ async def main(page: ft.Page):
         val_sub_conn.color = "#e67e22" if is_sub_conn else "#888888"
         page.update()
 
+
     def _fetch_api_data(ip):
         def get_state(domain, entity_name):
             try:
@@ -293,22 +251,9 @@ async def main(page: ft.Page):
         t_dsp = get_state("sensor", "DSP Temperature")
         fault = get_state("binary_sensor", "Verstärker Überlastung (Fault)")
         wifi = get_state("sensor", "WLAN Signal")
-        btrx_version = get_state("text_sensor", "BT Version")
-        subtx_version = get_state("text_sensor", "SUB Version")
-        rp_version = get_state("text_sensor", "DSP Version")
-        bt_conn = btrx_version
-        sub_conn = subtx_version
-        nonlocal last_update_check, online_version, github_assets
-        current_time = time.time()
-        if current_time - last_update_check > UPDATE_CHECK_INTERVAL:
-            last_update_check = current_time
-            try:
-                release_info = requests.get(GITHUB_API_LATEST, timeout=3).json()
-                online_version = release_info.get("tag_name", "2.1.0.0")
-                github_assets = release_info.get("assets", [])
-            except Exception: online_version = None
+        bt_conn = get_state("text_sensor", "BT Version")
+        sub_conn = get_state("text_sensor", "SUB Version")
         page.run_task(_update_dashboard_ui, src, sys_status, t_esp, t_dsp, fault, wifi, bt_conn, sub_conn)
-        page.run_task(check_for_updates, btrx_version, subtx_version, rp_version)
         nonlocal is_fetching
         is_fetching = False
 
@@ -321,95 +266,63 @@ async def main(page: ft.Page):
                 pass
             await asyncio.sleep(1)
 
-    def start_flash_thread(target):
-        threading.Thread(target=run_flash, args=(target,), daemon=True).start()
 
-    def run_flash(target):
-        ip = dropdown_mapping.get(device_dropdown.value)
-        if not ip: return
-        if target == "btrx": btn, status_lbl = btrx_flash_btn, btrx_status
-        elif target == "subtx": btn, status_lbl = subtx_flash_btn, subtx_status
-        else: btn, status_lbl = rp_flash_btn, rp_status
-        def update_ui(): page.update()
-        btn.disabled = True; btn.text = "LADE FIRMWARE..."
-        flash_progress.visible = True; flash_progress.value = 0.0
-        status_lbl.value = "Schritt 0: Lade Firmware von GitHub..."; status_lbl.color = "orange"
-        update_ui()
-        try:
-            download_url = None
-            if github_assets:
-                for asset in github_assets:
-                    if target.lower() in asset['name'].lower():
-                        download_url = asset['browser_download_url']; break
-            if not download_url:
-                if target == "btrx": download_url = "https://raw.githubusercontent.com/babeinlovexd/Insane-Sound-System/main/Firmware/Bluetooth/firmware.bin"
-                elif target == "subtx": download_url = "https://raw.githubusercontent.com/babeinlovexd/Insane-Sound-System/main/Firmware/SUB_TX/firmware.bin"
-                else: download_url = "https://raw.githubusercontent.com/babeinlovexd/Insane-Sound-System/main/Firmware/DSP/firmware.bin"
-            r = requests.get(download_url, timeout=15); r.raise_for_status()
-            fw_path = os.path.join(os.path.expanduser('~'), "latest_firmware.bin") 
-            with open(fw_path, "wb") as f: f.write(r.content)
-            btn.text = "FLASHING..."; update_ui()
-            if target in ["btrx", "subtx"]:
-                target_name_ui = "BT_RX" if target == "btrx" else "SUB_TX"
-                port = 8083 if target == "btrx" else 8082
-                button_encoded = urllib.parse.quote("Flash Mode: Bluetooth (ESP32)" if target == "btrx" else "Flash Mode: Sub-TX (ESP32)")
-                status_lbl.value = f"Schritt 1: Setze {target_name_ui} in Flash-Modus..."; update_ui()
-                session.post(f"http://{ip}/button/{button_encoded}/press", timeout=5); time.sleep(2)
-                status_lbl.value = f"Schritt 2: Flashe {target_name_ui} Firmware..."; update_ui()
-                command_args = ["--port", f"socket://{ip}:{port}", "--baud", "115200", "write_flash", "0x10000", fw_path]
-                def gui_update(msg):
-                    status_lbl.value = f"Flashing: {msg.split('...')[0]}..." if "..." in msg else msg
-                    page.run_task(lambda: log(msg))
-                    if "(" in msg and "%" in msg:
-                        try:
-                            pct_str = msg.split("(")[1].split("%")[0].strip()
-                            flash_progress.value = float(pct_str) / 100.0
-                        except Exception: pass
-                    update_ui()
-                redirector = ConsoleRedirector(gui_update)
-                with contextlib.redirect_stdout(redirector): esptool.main(command_args)
-                status_lbl.value = f"Schritt 3: {target_name_ui} Neustart..."; update_ui()
-                encoded_btn = urllib.parse.quote("Normal Boot: Bluetooth (ESP32)" if target == "btrx" else "Normal Boot: Sub-TX (ESP32)")
-                session.post(f"http://{ip}/button/{encoded_btn}/press", timeout=5)
-            elif target == "rp2354":
-                status_lbl.value = "Schritt 1: Setze RP2354 in Flash-Modus..."; update_ui()
-                encoded_btn = urllib.parse.quote("Flash Mode: DSP (RP2354)")
-                session.post(f"http://{ip}/button/{encoded_btn}/press", timeout=5); time.sleep(2)
-                status_lbl.value = "Schritt 2: Flashe RP2354 Firmware..."; update_ui()
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.settimeout(15); s.connect((ip, 8081))
-                    with open(fw_path, 'rb') as f: fw_data = f.read()
-                    file_size = len(fw_data)
-                    status_lbl.value = "Schritt 2: Sende RP2354 Knock Sequence..."; update_ui()
-                    s.sendall(bytes([0x56, 0xff, 0x8b, 0xe4])); s.sendall(b'n')
-                    resp = s.recv(1)
-                    if resp != b'n':
-                        s.sendall(bytes([0x56, 0xff, 0x8b, 0xe4])); s.sendall(b'n')
-                        resp = s.recv(1)
-                        if resp != b'n': raise Exception("RP2354 UART Bootloader antwortet nicht auf Knock.")
-                    status_lbl.value = "Schritt 3: Flashe 32-Byte Blöcke..."; update_ui()
-                    sent = 0; last_pct_sent = -1
-                    for i in range(0, file_size, 32):
-                        chunk = fw_data[i:i+32]
-                        if len(chunk) < 32: chunk += bytes([0x00] * (32 - len(chunk)))
-                        s.sendall(b'w'); s.sendall(chunk); resp = s.recv(1)
-                        if resp != b'w': raise Exception(f"RP2354 Schreibfehler bei Offset {i}")
-                        sent += len(chunk); pct = min(sent / file_size, 1.0)
-                        if int(pct * 100) > last_pct_sent:
-                            flash_progress.value = pct; status_lbl.value = f"Flashing: {int(pct*100)}%"; update_ui(); last_pct_sent = int(pct * 100)
-                    status_lbl.value = "Schritt 4: Starte RP2354 Firmware..."; update_ui()
-                    s.sendall(b'x')
-                    try: s.recv(1)
-                    except socket.timeout: pass
-                status_lbl.value = "Schritt 3: RP2354 geflasht. Reboot."; update_ui()
-                encoded_btn = urllib.parse.quote("Normal Boot: DSP (RP2354)")
-                session.post(f"http://{ip}/button/{encoded_btn}/press", timeout=5)
-            status_lbl.value = "🚀 Update 100% erfolgreich!"; status_lbl.color = "#3fb950"
-            page.run_task(show_snackbar, f"{target.upper()} wurde erfolgreich aktualisiert!")
-        except Exception as e:
-            status_lbl.value = f"❌ Flashen fehlgeschlagen: {e}"; status_lbl.color = "red"; page.run_task(log, f"Fehler: {e}")
-        finally:
-            btn.disabled = False; btn.text = f"{target.upper()} UPDATE"; flash_progress.visible = False; update_ui()
+    def apply_preset(preset):
+        settings = {}
+        if preset == "kino":
+            settings = {
+                "EQ 100 Hz (Bass)": 14,
+                "EQ 300 Hz (Low-Mid)": 10,
+                "EQ 1 kHz (Mid)": 10,
+                "EQ 3 kHz (High-Mid)": 12,
+                "EQ 8 kHz (Treble)": 12,
+                "Sub Trim": 14,
+                "Clear Voice": True
+            }
+        elif preset == "musik":
+            settings = {
+                "EQ 100 Hz (Bass)": 12,
+                "EQ 300 Hz (Low-Mid)": 10,
+                "EQ 1 kHz (Mid)": 10,
+                "EQ 3 kHz (High-Mid)": 11,
+                "EQ 8 kHz (Treble)": 11,
+                "Sub Trim": 12,
+                "Clear Voice": False
+            }
+        elif preset == "gaming":
+            settings = {
+                "EQ 100 Hz (Bass)": 15,
+                "EQ 300 Hz (Low-Mid)": 11,
+                "EQ 1 kHz (Mid)": 9,
+                "EQ 3 kHz (High-Mid)": 12,
+                "EQ 8 kHz (Treble)": 13,
+                "Sub Trim": 15,
+                "Clear Voice": True
+            }
+        elif preset == "flat":
+            settings = {
+                "EQ 100 Hz (Bass)": 10,
+                "EQ 300 Hz (Low-Mid)": 10,
+                "EQ 1 kHz (Mid)": 10,
+                "EQ 3 kHz (High-Mid)": 10,
+                "EQ 8 kHz (Treble)": 10,
+                "Sub Trim": 10,
+                "Clear Voice": False
+            }
+
+        for k, v in settings.items():
+            if type(v) == bool:
+                send_switch_value(k, v)
+                if k == "Clear Voice":
+                    switch_clear_voice.value = v
+            else:
+                send_number_value(k, v)
+                if k in sliders_refs:
+                    sliders_refs[k].value = v
+        page.update()
+
+
+    sliders_refs = {}
 
     def create_live_slider(label_text, from_val, to_val, steps, entity_name, color, init_val=None):
         val_lbl = ft.Text(str(init_val) if init_val is not None else str(from_val), size=12, weight="bold")
@@ -417,9 +330,51 @@ async def main(page: ft.Page):
             val_lbl.value = str(int(e.control.value)); page.update()
             send_number_value(entity_name, e.control.value)
         sl = ft.Slider(min=from_val, max=to_val, divisions=steps, value=init_val or from_val, on_change=on_change, active_color=color)
+        sliders_refs[entity_name] = sl
         return ft.Column([ft.Row([ft.Text(label_text, size=12, weight="bold"), val_lbl], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), sl])
 
     # --- UI Definitions ---
+    # FilePickers for Backup/Restore
+    async def save_backup_result(e: ft.FilePickerResultEvent):
+        if not e.path: return
+        settings = {
+            "EQ 100 Hz (Bass)": int(sliders_refs.get("EQ 100 Hz (Bass)").value) if "EQ 100 Hz (Bass)" in sliders_refs else 10,
+            "EQ 300 Hz (Low-Mid)": int(sliders_refs.get("EQ 300 Hz (Low-Mid)").value) if "EQ 300 Hz (Low-Mid)" in sliders_refs else 10,
+            "EQ 1 kHz (Mid)": int(sliders_refs.get("EQ 1 kHz (Mid)").value) if "EQ 1 kHz (Mid)" in sliders_refs else 10,
+            "EQ 3 kHz (High-Mid)": int(sliders_refs.get("EQ 3 kHz (High-Mid)").value) if "EQ 3 kHz (High-Mid)" in sliders_refs else 10,
+            "EQ 8 kHz (Treble)": int(sliders_refs.get("EQ 8 kHz (Treble)").value) if "EQ 8 kHz (Treble)" in sliders_refs else 10,
+            "Sub Trim": int(sliders_refs.get("Sub Trim").value) if "Sub Trim" in sliders_refs else 10,
+            "Mid Trim": int(sliders_refs.get("Mid Trim").value) if "Mid Trim" in sliders_refs else 10,
+            "High Trim": int(sliders_refs.get("High Trim").value) if "High Trim" in sliders_refs else 10,
+            "Sub LP Crossover": int(sliders_refs.get("Sub LP Crossover").value) if "Sub LP Crossover" in sliders_refs else 120,
+            "Sat HP Crossover": int(sliders_refs.get("Sat HP Crossover").value) if "Sat HP Crossover" in sliders_refs else 95,
+            "Mid LP Crossover": int(sliders_refs.get("Mid LP Crossover").value) if "Mid LP Crossover" in sliders_refs else 3500,
+            "High HP Crossover": int(sliders_refs.get("High HP Crossover").value) if "High HP Crossover" in sliders_refs else 3500
+        }
+        import json
+        with open(e.path, "w") as f:
+            json.dump(settings, f, indent=4)
+        await show_snackbar("Backup gespeichert!")
+
+    async def pick_restore_result(e: ft.FilePickerResultEvent):
+        if not e.files or len(e.files) == 0: return
+        try:
+            import json
+            with open(e.files[0].path, "r") as f:
+                settings = json.load(f)
+            for k, v in settings.items():
+                send_number_value(k, v)
+                if k in sliders_refs:
+                    sliders_refs[k].value = v
+            page.update()
+            await show_snackbar("Einstellungen wiederhergestellt!")
+        except Exception as ex:
+            await show_snackbar(f"Fehler: {ex}", is_error=True)
+
+    save_file_dialog = ft.FilePicker(on_result=save_backup_result)
+    pick_file_dialog = ft.FilePicker(on_result=pick_restore_result)
+    page.overlay.extend([save_file_dialog, pick_file_dialog])
+
     status_dot = ft.Text("●", size=20, color="#444444")
     device_dropdown = ft.Dropdown(
         options=[ft.dropdown.Option("Suche läuft...")],
@@ -444,16 +399,7 @@ async def main(page: ft.Page):
     tele_col3_1, val_sub_conn = create_stat("SUB CONN")
     tele_col3_2, val_bl_conn = create_stat("BT CONN")
 
-    btrx_fw_label = ft.Text("Aktuelle Version: [N/A]", size=13)
-    btrx_status = ft.Text("Bereit.", size=12, color="#8b949e")
-    btrx_flash_btn = ft.Button("BT_RX UPDATE", bgcolor="#7a1a1a", color="white", on_click=lambda e: start_flash_thread("btrx"))
-    subtx_fw_label = ft.Text("Aktuelle Version: [N/A]", size=13)
-    subtx_status = ft.Text("Bereit.", size=12, color="#8b949e")
-    subtx_flash_btn = ft.Button("SUB_TX UPDATE", bgcolor="#7a1a1a", color="white", on_click=lambda e: start_flash_thread("subtx"))
-    rp_fw_label = ft.Text("Aktuelle Version: [N/A]", size=13)
-    rp_status = ft.Text("Bereit.", size=12, color="#8b949e")
-    rp_flash_btn = ft.Button("RP2354 UPDATE", bgcolor="#7a1a1a", color="white", on_click=lambda e: start_flash_thread("rp2354"))
-    flash_progress = ft.ProgressBar(value=0, height=15, visible=False)
+
     log_box = ft.TextField(multiline=True, read_only=True, expand=True, text_size=12, min_lines=20, max_lines=20, bgcolor="#0d1117", border_color="transparent")
 
     input_dropdown = ft.Dropdown(options=[ft.dropdown.Option(v) for v in ["Toslink", "Aux", "Bluetooth", "WLAN"]], on_select=lambda e: send_select_value("Input Source", e.control.value))
@@ -463,7 +409,7 @@ async def main(page: ft.Page):
 
     tabs = ft.Tabs(
         selected_index=0, animation_duration=300, expand=True,
-        length=6,
+        length=5,
         content=ft.Column(
             expand=True,
             controls=[
@@ -472,7 +418,6 @@ async def main(page: ft.Page):
                         ft.Tab(label="Steuerung"),
                         ft.Tab(label="DSP"),
                         ft.Tab(label="Telemetrie"),
-                        ft.Tab(label="Updates"),
                         ft.Tab(label="Log"),
                         ft.Tab(label="Info"),
                     ]
@@ -481,6 +426,13 @@ async def main(page: ft.Page):
                     expand=True,
                     controls=[
                         ft.ListView(expand=True, spacing=10, padding=20, controls=[
+                            ft.Text("Quick Presets", size=20, weight="bold", color="#1abc9c"),
+                            ft.Row([
+                                ft.Button("Kino", bgcolor="#1abc9c", color="white", on_click=lambda e: apply_preset("kino")),
+                                ft.Button("Musik", bgcolor="#1abc9c", color="white", on_click=lambda e: apply_preset("musik")),
+                                ft.Button("Gaming", bgcolor="#1abc9c", color="white", on_click=lambda e: apply_preset("gaming")),
+                                ft.Button("Flat", bgcolor="#1abc9c", color="white", on_click=lambda e: apply_preset("flat")),
+                            ], wrap=True),
                             ft.Text("System", size=20, weight="bold", color="#2f81f7"),
                             ft.Text("Input Source"), input_dropdown,
                             ft.Row([
@@ -493,6 +445,13 @@ async def main(page: ft.Page):
                                 ft.Button("IR Learn", bgcolor="#3498db", color="white", on_click=lambda e: send_action(f"button/{urllib.parse.quote('Start IR Learn')}/press")),
                                 ft.Button("Clear IR", bgcolor="#c0392b", color="white", on_click=lambda e: send_action(f"button/{urllib.parse.quote('Alle IR-Codes löschen')}/press")),
                             ]),
+                            ft.Text("Bluetooth Media Controls", size=20, weight="bold", color="#9b59b6"),
+                            ft.Row([
+                                ft.Button("⏮ Prev", bgcolor="#8e44ad", color="white", on_click=lambda e: send_action(f"button/{urllib.parse.quote('Media Prev')}/press")),
+                                ft.Button("▶ Play", bgcolor="#8e44ad", color="white", on_click=lambda e: send_action(f"button/{urllib.parse.quote('Media Play')}/press")),
+                                ft.Button("⏸ Pause", bgcolor="#8e44ad", color="white", on_click=lambda e: send_action(f"button/{urllib.parse.quote('Media Pause')}/press")),
+                                ft.Button("⏭ Next", bgcolor="#8e44ad", color="white", on_click=lambda e: send_action(f"button/{urllib.parse.quote('Media Next')}/press")),
+                            ], wrap=True),
                             ft.Text("Audio Verbesserungen", size=18, weight="bold", color="#f1c40f"),
                             ft.Row([switch_night_mode, switch_clear_voice]),
                             ft.Text("Allgemein", size=18, weight="bold", color="#3fb950"),
@@ -501,6 +460,10 @@ async def main(page: ft.Page):
                         ]),
                         ft.ListView(expand=True, spacing=10, padding=20, controls=[
                             ft.Text("Frequenzweichen (Crossovers)", size=18, weight="bold", color="#d29922"),
+                            ft.Row([
+                                ft.Button("Backup Settings", on_click=lambda _: save_file_dialog.save_file(allowed_extensions=["json"])),
+                                ft.Button("Restore Settings", on_click=lambda _: pick_file_dialog.pick_files(allowed_extensions=["json"])),
+                            ]),
                             create_live_slider("Sub LP Crossover", 50, 255, 205, "Sub LP Crossover", "#e67e22", 120),
                             create_live_slider("Sat HP Crossover", 50, 255, 205, "Sat HP Crossover", "#e67e22", 95),
                             create_live_slider("Mid LP Crossover", 500, 10000, 95, "Mid LP Crossover", "#e67e22", 3500),
@@ -520,21 +483,6 @@ async def main(page: ft.Page):
                             ft.Row([tele_col2_1, tele_col2_2, tele_col2_3], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                             ft.Row([tele_col3_1, tele_col3_2], alignment=ft.MainAxisAlignment.START),
                         ], spacing=20)),
-                        ft.ListView(expand=True, spacing=10, padding=20, controls=[
-                            flash_progress,
-                            ft.Container(bgcolor="#161b22", border=ft.Border(ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d")), border_radius=10, padding=20, content=ft.Column([
-                                ft.Text("ESP32 (BT_RX / BLUETOOTH)", size=14, weight="bold", color="#2f81f7"),
-                                btrx_fw_label, btrx_status, ft.Row([btrx_flash_btn, ft.Button("RESTART BT", bgcolor="#e67e22", color="white", on_click=restart_bluetooth)])
-                            ])),
-                            ft.Container(bgcolor="#161b22", border=ft.Border(ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d")), border_radius=10, padding=20, content=ft.Column([
-                                ft.Text("ESP32 (SUB_TX / SUBWOOFER)", size=14, weight="bold", color="#3fb950"),
-                                subtx_fw_label, subtx_status, subtx_flash_btn
-                            ])),
-                            ft.Container(bgcolor="#161b22", border=ft.Border(ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d"), ft.BorderSide(1, "#30363d")), border_radius=10, padding=20, content=ft.Column([
-                                ft.Text("RP2354A (DSP)", size=14, weight="bold", color="#d29922"),
-                                rp_fw_label, rp_status, rp_flash_btn
-                            ]))
-                        ]),
                         log_box,
                         ft.Column([
                             ft.Text("Insane Control Center", size=24, weight="bold"),
