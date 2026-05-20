@@ -1,24 +1,27 @@
-# Final Async and Deprecation Cleanup
+# Implement Internal Profiles and Clipboard Backup
 
-Address the remaining `TypeError` in `page.run_task` and suppress the `DeprecationWarning` for `page.shared_preferences`.
+Replace the failing `FilePicker` with a robust internal profile system and clipboard-based export/import.
 
 ## Proposed Changes
 
 ### main.py
 
-- Correct `page.run_task` usage: `page.run_task(coro_func, *args)`.
-- Use a simpler `warnings.simplefilter` to ensure the `DeprecationWarning` is hidden.
+- Add `favorite_profiles` dictionary.
+- Load `iss_profiles` from `SharedPreferences` at startup.
+- Add UI to the DSP tab:
+    - Dropdown to select a profile.
+    - Button to "Save Current Settings" to a profile.
+    - Button to "Restore Selected Profile".
+    - Buttons to Export/Import settings via Clipboard (JSON text).
+- Remove all `FilePicker` references.
 
 #### [main.py](file:///C:/Users/chris/OneDrive/Dokumente/Insane-Soundbar/Insane Control Center/Android/src/main.py)
 
-```diff
--warnings.filterwarnings("ignore", category=DeprecationWarning, module="flet")
-+warnings.simplefilter("ignore", DeprecationWarning)
-
-...
-
--page.run_task(lambda: log(clean_log))
-+page.run_task(log, clean_log)
+```python
+async def save_profile(_e):
+    # Collect current slider values
+    # Save to favorite_profiles
+    # Update storage
 ```
 
 ## Verification Plan

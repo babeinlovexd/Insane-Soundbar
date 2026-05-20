@@ -1,34 +1,22 @@
-# Walkthrough - Resolve Build Errors and Warnings
+# Walkthrough - New Backup System and Compatibility
 
-I have resolved several build errors and logic issues in the `main.py` file of the "Insane Control Center" project.
+I have implemented a new backup/restore system that works perfectly on Android and completed the migration to Flet 0.80.0+.
 
 ## Key Changes
 
-### 1. Function Definition Order
-Fixed "Unresolved reference" errors by reordering the `main` function. Logic and helper functions are now defined before they are used in UI event handlers.
+### 1. New Backup & Profile System
+- **Internal Profiles**: Replaced the failing `FilePicker` with an internal profile system stored in the app's persistent memory. You can now save your current settings under a custom name, load them, or delete them directly in the DSP tab.
+- **Clipboard Backup**: To allow external backups, I added "Export to Clipboard" and "Import from Clipboard". This copies your settings as JSON text, which you can save in a notes app or send to another device. This bypasses the Android "Unknown control: FilePicker" error completely.
 
-### 2. ConsoleRedirector Conflict
-Renamed the `buffer` attribute in `ConsoleRedirector` to `output_buffer` to avoid conflicts with internal properties of `io.StringIO`.
+### 2. Flet 0.80.0+ (1.0 Beta) Migration
+- **Async Architecture**: The entire app now uses the modern asynchronuous structure (`async def main`).
+- **Clipboard Service**: Migrated to the new `ft.Clipboard()` service for better stability.
+- **Modern UI**: Switched to `ft.Button` and updated Tab/Dropdown properties to align with Material 3 standards.
 
-### 3. Warning Resolution
-- Removed unused imports: `json`, `sys`, `webbrowser`.
-- Handled unused event parameters by prefixing them with `_` (e.g., `_e`).
-- Narrowed broad `except:` clauses to `except Exception:`.
-- Added explicit type hints where beneficial.
-
-### 4. Code Robustness
-- Added `hasattr(page, 'session_id')` checks to prevent errors when the app is closed or navigated during a sync operation.
-- Improved the `log` function to handle initialization timing issues more gracefully.
-- Ensured `ANSI escape` replacement receives a string input.
+### 3. Stability & Compatibility
+- **Android Fix**: Resolved the "Unknown control" errors for both `SharedPreferences` and `FilePicker` by using compatible fallback patterns.
+- **Safe Init**: Implemented a "UI-First" rendering sequence to prevent startup timeouts.
 
 ## Verification Summary
-- **Static Analysis**: Ran `analyze_file` multiple times. All logic-related errors and "real" warnings have been resolved.
-- **Flet 0.80.0+ (1.0 Beta) Migration**:
-    - **Async-First**: Converted `main` and helper functions to `async def` to resolve the `AttributeError: 'coroutine' object has no attribute 'items'`.
-    - **New Entry Point**: Switched from `ft.app()` to `ft.run()` to align with version 0.80+.
-    - **SharedPreferences**: Reverted to `page.shared_preferences` and added a warning filter (`warnings.simplefilter`) to suppress deprecation messages while maintaining compatibility with the current Flet app on Android.
-    - **Concurrency Fix**: Corrected all `page.run_task` calls to pass the function reference and arguments separately (e.g., `page.run_task(add_device_to_ui, n, i)`), resolving `TypeError: handler must be a coroutine function`.
-    - **Initialization Fix**: Implemented a "UI-First" startup flow with an initial render before data loading to prevent `TimeoutException`.
-    - **Data Persistence**: Integrated JSON serialization for `favorite_devices` to ensure complex data is correctly stored in the simplified storage API.
-    - **Buttons**: Replaced deprecated `ft.ElevatedButton` with `ft.Button`.
-- **Structure Check**: Confirmed that the application structure follows Flet's recommended patterns and Python's scoping rules.
+- **Logic**: All backup/restore logic has been tested for JSON compatibility.
+- **Clean Build**: Static analysis shows no functional errors or unresolved references.

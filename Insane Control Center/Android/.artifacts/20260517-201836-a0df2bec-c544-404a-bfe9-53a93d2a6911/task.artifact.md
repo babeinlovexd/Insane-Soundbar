@@ -1,6 +1,8 @@
 # Task Management
 
-- [/] Final Async and Deprecation Cleanup
-    - [ ] Fix all `page.run_task` calls to pass function and args separately
-    - [ ] Broaden `DeprecationWarning` filter
-    - [ ] Verify logic and stability
+- [/] Implement Internal Profiles and Clipboard Backup
+    - [ ] Create `favorite_profiles` storage logic
+    - [ ] Add Profile Management UI in DSP tab
+    - [ ] Implement Save/Load/Delete profile logic
+    - [ ] Add Export/Import to Clipboard functionality
+    - [ ] Remove disabled `FilePicker` code

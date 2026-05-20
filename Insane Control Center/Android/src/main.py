@@ -49,6 +49,7 @@ async def main(page: ft.Page):
     # --- Variablen ---
     scanned_devices = {}
     favorite_devices = {} # Will be loaded later
+    favorite_profiles = {} # Will be loaded later
     dropdown_mapping = {}
     
     session = requests.Session()
@@ -56,6 +57,11 @@ async def main(page: ft.Page):
     log_running = False
     current_log_ip = None
     browser: ServiceBrowser | None = None
+    
+    online_version = None
+    last_update_check = 0
+    github_assets = []
+
     # --- UI Helper & Callbacks ---
     async def show_snackbar(message, is_error=False):
         page.snack_bar = ft.SnackBar(ft.Text(str(message)), bgcolor="red" if is_error else "green")
@@ -333,48 +339,65 @@ async def main(page: ft.Page):
         sliders_refs[entity_name] = sl
         return ft.Column([ft.Row([ft.Text(label_text, size=12, weight="bold"), val_lbl], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), sl])
 
-    # --- UI Definitions ---
-    # FilePickers for Backup/Restore
-    async def save_backup_result(e):
-        if not e.path: return
-        settings = {
-            "EQ 100 Hz (Bass)": int(sliders_refs.get("EQ 100 Hz (Bass)").value) if "EQ 100 Hz (Bass)" in sliders_refs else 10,
-            "EQ 300 Hz (Low-Mid)": int(sliders_refs.get("EQ 300 Hz (Low-Mid)").value) if "EQ 300 Hz (Low-Mid)" in sliders_refs else 10,
-            "EQ 1 kHz (Mid)": int(sliders_refs.get("EQ 1 kHz (Mid)").value) if "EQ 1 kHz (Mid)" in sliders_refs else 10,
-            "EQ 3 kHz (High-Mid)": int(sliders_refs.get("EQ 3 kHz (High-Mid)").value) if "EQ 3 kHz (High-Mid)" in sliders_refs else 10,
-            "EQ 8 kHz (Treble)": int(sliders_refs.get("EQ 8 kHz (Treble)").value) if "EQ 8 kHz (Treble)" in sliders_refs else 10,
-            "Sub Trim": int(sliders_refs.get("Sub Trim").value) if "Sub Trim" in sliders_refs else 10,
-            "Mid Trim": int(sliders_refs.get("Mid Trim").value) if "Mid Trim" in sliders_refs else 10,
-            "High Trim": int(sliders_refs.get("High Trim").value) if "High Trim" in sliders_refs else 10,
-            "Sub LP Crossover": int(sliders_refs.get("Sub LP Crossover").value) if "Sub LP Crossover" in sliders_refs else 120,
-            "Sat HP Crossover": int(sliders_refs.get("Sat HP Crossover").value) if "Sat HP Crossover" in sliders_refs else 95,
-            "Mid LP Crossover": int(sliders_refs.get("Mid LP Crossover").value) if "Mid LP Crossover" in sliders_refs else 3500,
-            "High HP Crossover": int(sliders_refs.get("High HP Crossover").value) if "High HP Crossover" in sliders_refs else 3500
-        }
-        import json
-        with open(e.path, "w") as f:
-            json.dump(settings, f, indent=4)
-        await show_snackbar("Backup gespeichert!")
+    # --- Profile Logic ---
+    async def _update_profile_dropdown():
+        vals = list(favorite_profiles.keys())
+        profile_dropdown.options = [ft.dropdown.Option(v) for v in vals]
+        profile_dropdown.disabled = len(vals) == 0
+        if vals and not profile_dropdown.value: profile_dropdown.value = vals[0]
+        page.update()
 
-    async def pick_restore_result(e):
-        if not e.files or len(e.files) == 0: return
-        try:
-            import json
-            with open(e.files[0].path, "r") as f:
-                settings = json.load(f)
-            for k, v in settings.items():
+    async def save_profile(_e):
+        name = profile_name_field.value.strip()
+        if not name: await show_snackbar("Bitte Namen eingeben!", True); return
+        settings = {k: float(v.value) for k, v in sliders_refs.items()}
+        settings["Clear Voice"] = switch_clear_voice.value
+        favorite_profiles[name] = settings
+        await prefs.set("iss_profiles", json.dumps(favorite_profiles))
+        await _update_profile_dropdown()
+        await show_snackbar(f"Profil '{name}' gespeichert!")
+
+    async def load_profile(_e):
+        name = profile_dropdown.value
+        if not name or name not in favorite_profiles: return
+        settings = favorite_profiles[name]
+        for k, v in settings.items():
+            if k == "Clear Voice":
+                send_switch_value(k, v)
+                switch_clear_voice.value = v
+            elif k in sliders_refs:
                 send_number_value(k, v)
-                if k in sliders_refs:
-                    sliders_refs[k].value = v
-            page.update()
-            await show_snackbar("Einstellungen wiederhergestellt!")
+                sliders_refs[k].value = v
+        page.update()
+        await show_snackbar(f"Profil '{name}' geladen!")
+
+    async def delete_profile(_e):
+        name = profile_dropdown.value
+        if name in favorite_profiles:
+            del favorite_profiles[name]
+            await prefs.set("iss_profiles", json.dumps(favorite_profiles))
+            profile_dropdown.value = None
+            await _update_profile_dropdown()
+            await show_snackbar(f"Profil '{name}' gelöscht!")
+
+    async def export_to_clipboard(_e):
+        data = json.dumps(favorite_profiles, indent=4)
+        await ft.Clipboard().set(data)
+        await show_snackbar("Backup in Zwischenablage kopiert!")
+
+    async def import_from_clipboard(_e):
+        try:
+            data = await ft.Clipboard().get()
+            if not data: await show_snackbar("Zwischenablage ist leer!", True); return
+            new_profiles = json.loads(data)
+            favorite_profiles.update(new_profiles)
+            await prefs.set("iss_profiles", json.dumps(favorite_profiles))
+            await _update_profile_dropdown()
+            await show_snackbar("Profile importiert!")
         except Exception as ex:
-            await show_snackbar(f"Fehler: {ex}", is_error=True)
+            await show_snackbar(f"Import Fehler: {ex}", True)
 
-    save_file_dialog = ft.FilePicker(); save_file_dialog.on_result = save_backup_result
-    pick_file_dialog = ft.FilePicker(); pick_file_dialog.on_result = pick_restore_result
-    page.overlay.extend([save_file_dialog, pick_file_dialog])
-
+    # --- UI Definitions ---
     status_dot = ft.Text("●", size=20, color="#444444")
     device_dropdown = ft.Dropdown(
         options=[ft.dropdown.Option("Suche läuft...")],
@@ -406,6 +429,10 @@ async def main(page: ft.Page):
     ir_dropdown = ft.Dropdown(options=[ft.dropdown.Option(v) for v in ["None", "Vol+", "Vol-", "Mute", "Input Next"]], on_select=lambda e: send_select_value("IR Learn Target", e.control.value))
     switch_night_mode = ft.Switch(label="Night Mode (DRC)", value=False, on_change=lambda e: send_switch_value("Night Mode (DRC)", e.control.value), active_color="#f1c40f")
     switch_clear_voice = ft.Switch(label="Clear Voice", value=False, on_change=lambda e: send_switch_value("Clear Voice", e.control.value), active_color="#f1c40f")
+
+    # Profile UI Components
+    profile_name_field = ft.TextField(label="Profil Name", expand=True, bgcolor="#161b22")
+    profile_dropdown = ft.Dropdown(label="Gespeicherte Profile", expand=True)
 
     tabs = ft.Tabs(
         selected_index=0, animation_duration=300, expand=True,
@@ -459,11 +486,16 @@ async def main(page: ft.Page):
                             create_live_slider("OLED Brightness (0-100)", 0, 100, 100, "OLED Brightness", "#3498db", 100),
                         ]),
                         ft.ListView(expand=True, spacing=10, padding=20, controls=[
-                            ft.Text("Frequenzweichen (Crossovers)", size=18, weight="bold", color="#d29922"),
+                            ft.Text("Profile Management", size=20, weight="bold", color="#1abc9c"),
+                            ft.Row([profile_name_field, ft.Button("💾 Speichern", on_click=save_profile, bgcolor="#1abc9c", color="white")]),
+                            ft.Row([profile_dropdown, ft.Button("📂 Laden", on_click=load_profile, bgcolor="#3498db", color="white"), ft.Button("✖ Löschen", on_click=delete_profile, bgcolor="#c0392b", color="white")]),
+                            ft.Text("Backup & Transfer", size=16, weight="bold", color="#8b949e"),
                             ft.Row([
-                                ft.Button("Backup Settings", on_click=lambda _: save_file_dialog.save_file(allowed_extensions=["json"])),
-                                ft.Button("Restore Settings", on_click=lambda _: pick_file_dialog.pick_files(allowed_extensions=["json"])),
+                                ft.Button("📋 Export to Clipboard", on_click=export_to_clipboard),
+                                ft.Button("📥 Import from Clipboard", on_click=import_from_clipboard),
                             ]),
+                            ft.Divider(height=20, color="transparent"),
+                            ft.Text("Frequenzweichen (Crossovers)", size=18, weight="bold", color="#d29922"),
                             create_live_slider("Sub LP Crossover", 50, 255, 205, "Sub LP Crossover", "#e67e22", 120),
                             create_live_slider("Sat HP Crossover", 50, 255, 205, "Sat HP Crossover", "#e67e22", 95),
                             create_live_slider("Mid LP Crossover", 500, 10000, 95, "Mid LP Crossover", "#e67e22", 3500),
@@ -522,12 +554,16 @@ async def main(page: ft.Page):
     try:
         raw_favs = await prefs.get("iss_favorites")
         if raw_favs:
-            loaded_favs = json.loads(raw_favs)
-            favorite_devices.update(loaded_favs)
+            favorite_devices.update(json.loads(raw_favs))
+            
+        raw_profiles = await prefs.get("iss_profiles")
+        if raw_profiles:
+            favorite_profiles.update(json.loads(raw_profiles))
     except Exception:
         pass
         
     await _update_dropdown()
+    await _update_profile_dropdown()
     await start_scan(None)
 
 if __name__ == "__main__":
