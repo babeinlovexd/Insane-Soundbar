@@ -11,3 +11,9 @@ compile_commands.json
 __pycache__/
 esptool.zip
 esptool-4.6.2/
+*.bak
+*.swp
+*.pyc
+*~
+.DS_Store
+Thumbs.db
