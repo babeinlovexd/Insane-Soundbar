@@ -2,6 +2,7 @@ import flet as ft
 import socket
 import threading
 import requests
+from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
 import os
 import re
@@ -15,6 +16,8 @@ from zeroconf import ServiceBrowser, Zeroconf
 warnings.simplefilter("ignore", DeprecationWarning)
 
 GITHUB_URL = "https://github.com/babeinlovexd/Insane-Soundbar"
+
+http_executor = ThreadPoolExecutor(max_workers=5)
 
 class DeviceListener:
     def __init__(self, callback):
@@ -163,27 +166,27 @@ async def main(page: ft.Page):
 
     def send_action(endpoint):
         ip = dropdown_mapping.get(device_dropdown.value)
-        if ip: threading.Thread(target=lambda: session.post(f"http://{ip}/{endpoint}", timeout=2), daemon=True).start()
+        if ip: http_executor.submit(lambda: session.post(f"http://{ip}/{endpoint}", timeout=2))
 
     def send_number_value(entity_name, value):
         ip = dropdown_mapping.get(device_dropdown.value)
         if ip:
             encoded_name = urllib.parse.quote(entity_name)
-            threading.Thread(target=lambda: session.post(f"http://{ip}/number/{encoded_name}/set?value={int(value)}", timeout=2), daemon=True).start()
+            http_executor.submit(lambda: session.post(f"http://{ip}/number/{encoded_name}/set?value={int(value)}", timeout=2))
 
     def send_select_value(entity_name, value):
         ip = dropdown_mapping.get(device_dropdown.value)
         if ip:
             encoded_name = urllib.parse.quote(entity_name)
             encoded_val = urllib.parse.quote(value)
-            threading.Thread(target=lambda: session.post(f"http://{ip}/select/{encoded_name}/set?option={encoded_val}", timeout=2), daemon=True).start()
+            http_executor.submit(lambda: session.post(f"http://{ip}/select/{encoded_name}/set?option={encoded_val}", timeout=2))
 
     def send_switch_value(entity_name, state):
         ip = dropdown_mapping.get(device_dropdown.value)
         if ip:
             encoded_name = urllib.parse.quote(entity_name)
             action = "turn_on" if state else "turn_off"
-            threading.Thread(target=lambda: session.post(f"http://{ip}/switch/{encoded_name}/{action}", timeout=2), daemon=True).start()
+            http_executor.submit(lambda: session.post(f"http://{ip}/switch/{encoded_name}/{action}", timeout=2))
 
     async def start_log_stream(ip):
         nonlocal log_running

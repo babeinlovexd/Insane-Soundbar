@@ -3,6 +3,7 @@ from tkinter import messagebox
 import socket
 import threading
 import requests
+from concurrent.futures import ThreadPoolExecutor
 import webbrowser
 import os
 import re
@@ -88,6 +89,8 @@ class ConsoleRedirector(io.StringIO):
 class InsaneControlCenter(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        self.http_executor = ThreadPoolExecutor(max_workers=5)
 
         # 1. FENSTER-SETUP
         self.title("Insane Control Center")
@@ -694,16 +697,14 @@ class InsaneControlCenter(ctk.CTk):
     def send_action(self, endpoint):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
         if not ip: return
-        import threading
-        threading.Thread(target=lambda: self.session.post(f"http://{ip}/{endpoint}", timeout=2), daemon=True).start()
+        self.http_executor.submit(lambda: self.session.post(f"http://{ip}/{endpoint}", timeout=2))
 
     def send_number_value(self, entity_name, value):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
         if not ip: return
         import urllib.parse
         encoded_name = urllib.parse.quote(entity_name)
-        import threading
-        threading.Thread(target=lambda: self.session.post(f"http://{ip}/number/{encoded_name}/set?value={int(value)}", timeout=2), daemon=True).start()
+        self.http_executor.submit(lambda: self.session.post(f"http://{ip}/number/{encoded_name}/set?value={int(value)}", timeout=2))
 
     def send_select_value(self, entity_name, value):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
@@ -711,8 +712,7 @@ class InsaneControlCenter(ctk.CTk):
         import urllib.parse
         encoded_name = urllib.parse.quote(entity_name)
         encoded_val = urllib.parse.quote(value)
-        import threading
-        threading.Thread(target=lambda: self.session.post(f"http://{ip}/select/{encoded_name}/set?option={encoded_val}", timeout=2), daemon=True).start()
+        self.http_executor.submit(lambda: self.session.post(f"http://{ip}/select/{encoded_name}/set?option={encoded_val}", timeout=2))
 
     def send_switch_value(self, entity_name, state):
         ip = self.dropdown_mapping.get(self.device_dropdown.get())
@@ -720,8 +720,7 @@ class InsaneControlCenter(ctk.CTk):
         import urllib.parse
         encoded_name = urllib.parse.quote(entity_name)
         action = "turn_on" if state else "turn_off"
-        import threading
-        threading.Thread(target=lambda: self.session.post(f"http://{ip}/switch/{encoded_name}/{action}", timeout=2), daemon=True).start()
+        self.http_executor.submit(lambda: self.session.post(f"http://{ip}/switch/{encoded_name}/{action}", timeout=2))
 
     # --- LOGIK FUNKTIONEN ---
     def add_device_to_ui(self, name, ip):
