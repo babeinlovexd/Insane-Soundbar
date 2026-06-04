@@ -1,7 +1,6 @@
 import os
 import subprocess
 import shutil
-import sys
 import time
 
 def robust_clean(path):
