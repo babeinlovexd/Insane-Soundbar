@@ -3,6 +3,7 @@
 #include "BluetoothA2DPSink.h"
 #include "nvs_flash.h"
 #include "esp_bt.h"
+#include "volume_mapper.h"
 
 #define I2C_SLAVE_ADDR 0x21
 #define I2C_SDA_PIN 16
@@ -85,7 +86,7 @@ void audio_state_cb(esp_a2d_audio_state_t state, void *ptr) {
 
 void volume_change_cb(int volume) {
     // volume is 0-127, map to 0-100
-    reg_sync_vol = (uint8_t)((volume * 100) / 127);
+    reg_sync_vol = VolumeMapper::map_volume(volume);
     trigger_int();
 }
 
