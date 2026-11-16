@@ -120,7 +120,7 @@ text_sensor:
     name: "Active Input"
     id: active_input_sensor
     lambda: |-
-      return id(input_source).state; // actually use .state but suppress or just return id(input_source).state;
+      return id(input_source).current_option().str();
 
 
 light:
@@ -178,7 +178,7 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return id(input_source).state == "Bluetooth";'
+            lambda: 'return id(input_source).current_option() == "Bluetooth";'
           then:
             - light.turn_on:
                 id: status_leds
@@ -189,7 +189,7 @@ script:
                 effect: "none"
       - if:
           condition:
-            lambda: 'return id(input_source).state == "Toslink";'
+            lambda: 'return id(input_source).current_option() == "Toslink";'
           then:
             - light.turn_on:
                 id: status_leds
@@ -200,7 +200,7 @@ script:
                 effect: "none"
       - if:
           condition:
-            lambda: 'return id(input_source).state == "Aux";'
+            lambda: 'return id(input_source).current_option() == "Aux";'
           then:
             - light.turn_on:
                 id: status_leds
@@ -211,7 +211,7 @@ script:
                 effect: "none"
       - if:
           condition:
-            lambda: 'return id(input_source).state == "WLAN";'
+            lambda: 'return id(input_source).current_option() == "WLAN";'
           then:
             - light.turn_on:
                 id: status_leds
