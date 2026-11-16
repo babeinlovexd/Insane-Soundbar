@@ -1,0 +1,6 @@
+[submodule "Firmware/Bluetooth/lib/ESP32-A2DP"]
+	path = Firmware/Bluetooth/lib/ESP32-A2DP
+	url = https://github.com/pschatzmann/ESP32-A2DP.git
+[submodule "Firmware/Bluetooth/lib/arduino-audio-tools"]
+	path = Firmware/Bluetooth/lib/arduino-audio-tools
+	url = https://github.com/pschatzmann/arduino-audio-tools.git

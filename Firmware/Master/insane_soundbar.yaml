@@ -276,11 +276,18 @@ speaker:
       - id: media_spk_mixer_input
       - id: announcement_spk_mixer_input
 
+# ESPHome 2026.10+: retain FLAC transcoding and enable all decoders explicitly.
+audio:
+  codecs:
+    flac:
+    mp3:
+    opus:
+    wav:
+
 media_player:
   - platform: speaker
     name: "Insane Sound Bar"
     id: isb_media_player
-    codec_support_enabled: all
     media_pipeline:
       speaker: media_spk_mixer_input
       format: FLAC
