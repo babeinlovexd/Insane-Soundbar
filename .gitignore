@@ -20,3 +20,4 @@ Thumbs.db
 
 # Local build verification and CI staging
 release-output/
+.artifacts/
