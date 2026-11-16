@@ -5,6 +5,9 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  project:
+    name: "babeinlovexd.insane_soundbar"
+    version: "0.1.9"
   platformio_options:
     board_build.flash_mode: dio
 
