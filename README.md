@@ -1,69 +1,24 @@
-<div align="center">
+<p align="center">
+  <a href="https://github.com/babeinlovexd"><img src="https://raw.githubusercontent.com/babeinlovexd/babeinlovexd/main/bxd-github-header.svg" width="520" alt="BxD / BabeinlovexD"></a>
+</p>
 
-# 🔊 Insane Soundbar
+# Insane Soundbar
 
-Four ESP32-Cores and an RP2354A-Hardware-DPS for lossless audio and full smart home intergation.
+[Issues](https://github.com/babeinlovexd/Insane-Soundbar/issues) · [Releases](https://github.com/babeinlovexd/Insane-Soundbar/releases)
 
----
+A **DIY soundbar project in development**, combining ESP32 controllers, an RP2354A DSP, a wireless subwoofer and ESPHome/Home Assistant integration. This hardware has not yet been tested as a complete real-world build by the author.
 
-<a href="https://github.com/babeinlovexd/insane-soundbar/releases"><img src="https://img.shields.io/github/v/release/babeinlovexd/insane-soundbar?style=for-the-badge&color=2ecc71" alt="Latest Release"></a>
-<img src="https://img.shields.io/badge/Hardware-V1.0.0-green?style=for-the-badge&logo=pcb" alt="Hardware Version">
-<img src="https://img.shields.io/badge/Status-BETA-ff9800?style=for-the-badge&logo=test-tube" alt="Status: Beta">
-<img src="https://img.shields.io/badge/Updates-OTA_Ready-4caf50?style=for-the-badge&logo=wi-fi" alt="OTA Ready">
+## Architecture
 
----
+| Part | Design role |
+| :--- | :--- |
+| ESP32-S3 master | ESPHome, network audio, controls and orchestration |
+| Bluetooth ESP32 | A2DP reception and metadata |
+| RP2354A | DSP, input routing and crossover processing |
+| Sub-TX / Sub-RX ESP32s | Wireless subwoofer audio link |
+| Audio hardware | PCM1808 ADC, PCM5102A DACs, TPA3118D2/TPA3116D2 amplifiers |
 
-<img src="https://img.shields.io/badge/ESPHome-Native-03A9F4?style=for-the-badge&logo=esphome" alt="ESPHome">
-<img src="https://img.shields.io/badge/Home_Assistant-Ready-41BDF5?style=for-the-badge&logo=home-assistant" alt="Home Assistant">
-<img src="https://img.shields.io/badge/Language-C%2B%2B_%7C_C_%7C_YAML-00599C?style=for-the-badge&logo=c%2B%2B" alt="Languages">
-<img src="https://img.shields.io/badge/PlatformIO-Build_System-F6822A?style=for-the-badge&logo=platformio&logoColor=white" alt="PlatformIO">
-
----
-
-<img src="https://img.shields.io/badge/Main_Brain-ESP32--S3_(N16R8)-E7352C?style=for-the-badge&logo=espressif" alt="Main: ESP32-S3 (N16R8)">
-<img src="https://img.shields.io/badge/DSP-RP2354A-FF69B4?style=for-the-badge&logo=raspberrypi" alt="DSP: RP2354A">
-<img src="https://img.shields.io/badge/BT_Radio-WROOM--32U_(N4)-34495E?style=for-the-badge&logo=espressif" alt="BT: WROOM-32U (N4)">
-<br>
-<img src="https://img.shields.io/badge/SUB_TX-WROOM--32U_(N4)-34495E?style=for-the-badge&logo=espressif" alt="Sub TX: WROOM-32U (N4)">
-<img src="https://img.shields.io/badge/SUB_RX-WROOM--32U_(N4)-34495E?style=for-the-badge&logo=espressif" alt="Sub RX: WROOM-32U (N4)">
-
----
-
-<img src="https://img.shields.io/badge/Amps_Bar-2x_TPA3118D2-002C77?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTMwLDEwIGgxNSB2MjAgaDE1IHYxNSBoLTE1IHYzMCBjMCw1IDMsNSA3LDUgaDggdjE1IGgtMTAgYy0xNSwwIC0yMCwtOCAtMjAsLTIwIHYtMzAgaC0xMCB2LTE1IGgxMCB6Ii8+PGNpcmNsZSBjeD0iNzUiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iNjcuNSIgeT0iMzUiIHdpZHRoPSIxNSIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white" alt="Amps Bar">
-<img src="https://img.shields.io/badge/Amp_Sub-1x_TPA3116D2-002C77?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTMwLDEwIGgxNSB2MjAgaDE1IHYxNSBoLTE1IHYzMCBjMCw1IDMsNSA3LDUgaDggdjE1IGgtMTAgYy0xNSwwIC0yMCwtOCAtMjAsLTIwIHYtMzAgaC0xMCB2LTE1IGgxMCB6Ii8+PGNpcmNsZSBjeD0iNzUiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iNjcuNSIgeT0iMzUiIHdpZHRoPSIxNSIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white" alt="Amp Sub">
-<img src="https://img.shields.io/badge/ADC-PCM1808-16a085?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTMwLDEwIGgxNSB2MjAgaDE1IHYxNSBoLTE1IHYzMCBjMCw1IDMsNSA3LDUgaDggdjE1IGgtMTAgYy0xNSwwIC0yMCwtOCAtMjAsLTIwIHYtMzAgaC0xMCB2LTE1IGgxMCB6Ii8+PGNpcmNsZSBjeD0iNzUiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iNjcuNSIgeT0iMzUiIHdpZHRoPSIxNSIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white" alt="ADC: PCM1808">
-<img src="https://img.shields.io/badge/DACs-3x_PCM5102A-27ae60?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTMwLDEwIGgxNSB2MjAgaDE1IHYxNSBoLTE1IHYzMCBjMCw1IDMsNSA3LDUgaDggdjE1IGgtMTAgYy0xNSwwIC0yMCwtOCAtMjAsLTIwIHYtMzAgaC0xMCB2LTE1IGgxMCB6Ii8+PGNpcmNsZSBjeD0iNzUiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iNjcuNSIgeT0iMzUiIHdpZHRoPSIxNSIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white" alt="DACs: PCM5102A">
-<br>
-<img src="https://img.shields.io/badge/Sub-Dayton_DCS205--4-8e44ad?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cG9seWdvbiBmaWxsPSJ3aGl0ZSIgcG9pbnRzPSIyMCwzNSA0NSwzNSA3NSwxMCA3NSw5MCA0NSw2NSAyMCw2NSIvPjwvc3ZnPg==&logoColor=white" alt="Subwoofer">
-<img src="https://img.shields.io/badge/Passive-Dayton_DSA215--PR-7f8c8d?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cG9seWdvbiBmaWxsPSJ3aGl0ZSIgcG9pbnRzPSIyMCwzNSA0NSwzNSA3NSwxMCA3NSw5MCA0NSw2NSAyMCw2NSIvPjwvc3ZnPg==&logoColor=white" alt="Passive Radiator">
-<img src="https://img.shields.io/badge/Mid-Dayton_CE70PR--4-d35400?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cG9seWdvbiBmaWxsPSJ3aGl0ZSIgcG9pbnRzPSIyMCwzNSA0NSwzNSA3NSwxMCA3NSw5MCA0NSw2NSAyMCw2NSIvPjwvc3ZnPg==&logoColor=white" alt="Midwoofer">
-<img src="https://img.shields.io/badge/High-Dayton_ND25FA--4-f39c12?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cG9seWdvbiBmaWxsPSJ3aGl0ZSIgcG9pbnRzPSIyMCwzNSA0NSwzNSA3NSwxMCA3NSw5MCA0NSw2NSAyMCw2NSIvPjwvc3ZnPg==&logoColor=white" alt="Tweeter">
-
----
-
-<img src="https://img.shields.io/badge/Espressif-MCUs-E7352C?style=for-the-badge&logo=espressif&logoColor=white" alt="Espressif">
-<img src="https://img.shields.io/badge/Raspberry_Pi-DSP-C51A4A?style=for-the-badge&logo=raspberrypi&logoColor=white" alt="Raspberry Pi">
-<img src="https://img.shields.io/badge/Texas_Instruments-Audio_ICs-CC0000?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTMwLDEwIGgxNSB2MjAgaDE1IHYxNSBoLTE1IHYzMCBjMCw1IDMsNSA3LDUgaDggdjE1IGgtMTAgYy0xNSwwIC0yMCwtOCAtMjAsLTIwIHYtMzAgaC0xMCB2LTE1IGgxMCB6Ii8+PGNpcmNsZSBjeD0iNzUiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iNjcuNSIgeT0iMzUiIHdpZHRoPSIxNSIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white" alt="TI">
-<img src="https://img.shields.io/badge/JLCPCB-PCB-005082?style=for-the-badge&logo=easyeda&logoColor=white" alt="JLCPCB">
-
----
-
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/esphome-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/esphome-check.yml?style=for-the-badge&logo=esphome&logoColor=white&label=MAIN_YAML" alt="Main YAML Status"></a>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-dsp.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-dsp.yml?style=for-the-badge&logo=raspberrypi&logoColor=white&label=DSP" alt="DSP Build"></a>
-<br>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-icc.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-icc.yml?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTAgOTMuN2wxODMuNi0yNS4zdjE3Ny40SDBWOTMuN3ptMjIzIDE4NHYxOTIuMWwyMjUgMzFWMjc3LjdIMjIzem0yMjUtMjQ1LjlMMjIzIDB2MTgxLjhoMjI1VjMxLjhaTTAgMjc3Ljd2MTQ5LjVsMTgzLjYgMjUuM1YyNzcuN0gweiIvPjwvc3ZnPg==&label=ICC_EXE" alt="ICC Build"></a>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-apk.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-apk.yml?style=for-the-badge&logo=android&logoColor=white&label=ICC_APK" alt="ICC APK Build"></a>
-<br>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-bluetooth.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-bluetooth.yml?style=for-the-badge&logo=espressif&logoColor=white&label=BT" alt="BT Build"></a>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-sub-tx.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-sub-tx.yml?style=for-the-badge&logo=espressif&logoColor=white&label=SUB_TX" alt="Sub TX Build"></a>
-<a href="https://github.com/babeinlovexd/insane-soundbar/actions/workflows/build-sub-rx.yml"><img src="https://img.shields.io/github/actions/workflow/status/babeinlovexd/insane-soundbar/build-sub-rx.yml?style=for-the-badge&logo=espressif&logoColor=white&label=SUB_RX" alt="Sub RX Build"></a>
-
----
-
-<a href="LICENSE.md#1-hardware-schematics--documentation"><img src="https://img.shields.io/badge/Hardware-CC%20BY--NC--SA%204.0-blue?style=for-the-badge&logo=creative-commons&logoColor=white" alt="Hardware License: CC BY-NC-SA 4.0"></a>
-<a href="LICENSE.md#2-software--firmware-source-code"><img src="https://img.shields.io/badge/Software-MIT-blue?style=for-the-badge&logo=github&logoColor=white" alt="Software License: MIT"></a>
-
----
+The design includes Bluetooth, network, AUX and optical S/PDIF input paths and Dayton speaker drivers. Availability in the source tree is not a completed hardware validation or a guarantee of lossless Bluetooth transmission.
 
 ```mermaid
 graph TD
@@ -160,31 +115,75 @@ graph TD
     Chassis_Sub ---|Acoustic Coupling| PR_Sub
 
 ```
-    
-<img src="Images/steuerrung.png" alt="ISB Platine" width="500">
-<img src="Images/dsp.png" alt="ISB Platine" width="500">
-<img src="PCB/ISB/3D.png" alt="ISB Platine" width="500">
-<img src="PCB/ISB_SUB/3D.png" alt="Subwoofer Platine" width="500">
-<img src="PCB/Flashcore/3D.png" alt="Flashcore Platine" width="500">
+
+## Files & build targets
+
+- [Firmware/Master/insane_soundbar.yaml](Firmware/Master/insane_soundbar.yaml): ESPHome master configuration.
+- [components](components): ESPHome orchestration and stream-server components.
+- [Firmware/DSP](Firmware/DSP): Pico SDK/CMake DSP implementation.
+- [Firmware/Bluetooth](Firmware/Bluetooth): Bluetooth firmware.
+- [Firmware/SUB_TX](Firmware/SUB_TX) and [Firmware/SUB_RX](Firmware/SUB_RX): subwoofer link firmware and local instructions.
+- [PCB](PCB): hardware files; [Images](Images): diagrams and interface references.
+- [Insane Control Center](Insane%20Control%20Center): desktop and Android sources.
+
+The standalone `Firmware/Master/platformio.ini` is an ESP-IDF target. It does not replace building `insane_soundbar.yaml` through ESPHome.
+
+## Setup
+
+1. Select a matching hardware/firmware revision and review schematics and power rails before assembly.
+2. Copy the ESPHome master YAML into your configuration directory. Provide your own local `secrets.yaml` containing `api_encryption_key`, `ota_password`, `wifi_ssid`, `wifi_password` and `ap_password`.
+3. Review pins, board/PSRAM settings and connected modules; validate and compile the YAML with ESPHome. Initial master flashing is via USB.
+4. Build each companion firmware with its own toolchain, or use the matching files from this repository's [Releases](https://github.com/babeinlovexd/Insane-Soundbar/releases).
+5. Test each controller and link independently before connecting amplifiers/speakers and integrating Home Assistant.
+
+## Downloads & Control Center
+
+| Release file | Target |
+| :--- | :--- |
+| `bluetooth_firmware.bin` | Bluetooth ESP32 |
+| `sub_tx_firmware.bin` | Subwoofer transmitter |
+| `sub_rx_firmware.bin` | Subwoofer receiver |
+| `isb_dsp.bin` / `isb_dsp.uf2` | DSP; choose the format for the actual flashing interface |
+| `InsaneControlCenter.exe` | Windows desktop tool |
+| `InsaneControlCenter.apk` | Android control app |
+
+Use the release downloads, not a dummy EXE in the source tree. The desktop source [InsaneControlCenter.py](Insane%20Control%20Center/Linux/InsaneControlCenter.py) uses `customtkinter requests esptool zeroconf pillow pyserial`. Run it from its directory so its graphics remain available.
+
+The desktop updater checks **Insane-Soundbar** releases and matches the exact binary filename for each target. A source update does not update an already downloaded executable. The Android app is a control interface; its current version intentionally does not provide firmware flashing.
+
+## Flashing prerequisites
+
+The desktop proxy uses port **8083** for Bluetooth and **8082** for Sub-TX. The DSP proxy sends firmware through a separate raw serial path and needs the bootloader expected by that protocol. A native RP2354 ROM is not a generic raw-UART firmware receiver; prefer the appropriate native flashing method, such as UF2 when supported by the actual board.
+
+For local builds, use the checked-in [GitHub Actions workflows](.github/workflows) as the source of toolchain commands for each controller and application. Do not mix binaries between Soundbar, V5 and Sound System 2.1.
+
+## Troubleshooting
+
+- **Wrong update:** Check the Soundbar release, exact target filename and current desktop build.
+- **No sound:** Trace one path at a time through input, DSP, DAC and amplifier; check clocks, mute and power first.
+- **Subwoofer link:** Compare TX/RX firmware and pairing/network configuration using their individual READMEs.
+- **Control app fails:** Check master IP, local network reachability and the configured HTTP API.
+- **DSP transfer completes but firmware does not start:** Confirm the required bootloader and flashing format; a completed socket transfer alone is not a flash verification.
+
+<p align="center"><img src="Images/steuerrung.png" alt="Control interface" width="400"> <img src="Images/dsp.png" alt="DSP controls" width="400"></p>
+<p align="center"><img src="PCB/ISB/3D.png" alt="Soundbar PCB" width="400"> <img src="PCB/ISB_SUB/3D.png" alt="Subwoofer PCB" width="400"></p>
+
+## License
+
+The existing [LICENSE.md](LICENSE.md) distinguishes **CC BY-NC-SA 4.0 for hardware, schematics and documentation** from **MIT for software and firmware source**, including configuration files and build pipelines. Third-party components retain their respective licenses.
 
 ---
 
-## ☕ Support this project
-**Insane Soundbar** took a ton of time, endless caffeine, and a few of my sanity cells. If you love the system and want to support my work, I'd appreciate a virtual coffee.
+## Builds and releases
 
-<a href="https://www.paypal.me/babeinlovexd">
-  <img src="https://img.shields.io/badge/Donate-PayPal-blue.svg?style=for-the-badge&logo=paypal" alt="Donate mit PayPal">
-</a>
+Version: **0.1.9** ([VERSION](VERSION)). [GitHub Actions](.github/workflows/release.yml) checks each push and pull request. A tag matching `v` + `VERSION` publishes a release after all jobs succeed; manual runs provide build artifacts. [Downloads](https://github.com/babeinlovexd/Insane-Soundbar/releases).
 
-Every cent goes directly toward the ongoing development of ISB and new prototypes. 🚀
+ESPHome CI uses dummy credentials and does not flash devices. Configure your own secrets and pin assignments before deployment.
 
----
+## Contributing
 
-## 👨‍💻 Developed by
+Questions, bug reports and contributions are welcome. Include version, setup and reproduction steps in an [Issue](https://github.com/babeinlovexd/Insane-Soundbar/issues). Please discuss larger changes before a pull request.
 
-| [<img src="https://avatars.githubusercontent.com/u/43302033?v=4" width="100"><br><sub>**BabeinlovexD**</sub>](https://github.com/babeinlovexd) |
-| :---: |
+Support this hobby project: [PayPal](https://www.paypal.me/babeinlovexd).
 
----
-
-</div>
+[BxD / BabeinlovexD](https://github.com/babeinlovexd) · [Website](https://babeinlovexd.de/)

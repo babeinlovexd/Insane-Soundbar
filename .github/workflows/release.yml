@@ -1,0 +1,285 @@
+name: Build and release
+'on':
+  push:
+    branches:
+    - '**'
+    tags:
+    - v*
+  pull_request: null
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+    - name: Check version and package source
+      run: python ci/release.py --package
+    - uses: actions/upload-artifact@v7
+      with:
+        name: source
+        path: release-output/*
+        if-no-files-found: error
+  esphome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+    - run: python -m pip install esphome==2026.10.2
+    - name: Compile with CI placeholders
+      run: python ci/esphome_check.py "Firmware/Master/insane_soundbar.yaml"
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+    - name: Install Dependencies
+      working-directory: Insane Control Center/Android
+      run: 'python -m pip install --upgrade pip
+
+        pip install -r requirements.txt
+
+        pip install "flet>=0.85.1"
+
+        '
+    - name: Build APK
+      working-directory: Insane Control Center/Android
+      run: 'flet build apk --module-name main --no-rich-output --yes
+
+        '
+    - name: Locate and Move APK
+      working-directory: Insane Control Center/Android
+      shell: bash
+      run: "APK_PATH=$(find build -name \"*.apk\" | grep -v \"debug\" | head -n 1)\nif [ -n \"$APK_PATH\" ]; then\n  mkdir -p release-output\n\
+        \  cp \"$APK_PATH\" release-output/InsaneControlCenter.apk\n  echo \"APK_FOUND=true\" >> $GITHUB_ENV\nelse\n  echo \"APK_FOUND=false\"\
+        \ >> $GITHUB_ENV\nfi\n"
+    - uses: actions/upload-artifact@v7
+      with:
+        name: build-apk
+        path: Insane Control Center/Android/release-output/InsaneControlCenter.apk
+        if-no-files-found: error
+    timeout-minutes: 45
+  build-bluetooth:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+    - name: Install PlatformIO
+      run: 'python -m pip install --upgrade pip
+
+        pip install --upgrade platformio
+
+        '
+    - name: Clone custom libraries
+      run: 'mkdir -p Firmware/Bluetooth/lib
+
+        cd Firmware/Bluetooth/lib
+
+        rm -rf ESP32-A2DP arduino-audio-tools
+
+        git clone https://github.com/pschatzmann/ESP32-A2DP.git
+
+        git clone https://github.com/pschatzmann/arduino-audio-tools.git
+
+        '
+    - name: Test volume mapping
+      working-directory: Firmware/Bluetooth
+      run: pio test -e native
+    - name: Build Firmware
+      working-directory: Firmware/Bluetooth
+      run: pio run -e esp32dev
+    - name: Rename Firmware
+      working-directory: Firmware/Bluetooth/.pio/build/esp32dev
+      run: mv firmware.bin bluetooth_firmware.bin
+    - uses: actions/upload-artifact@v7
+      with:
+        name: build-bluetooth
+        path: Firmware/Bluetooth/.pio/build/esp32dev/bluetooth_firmware.bin
+        if-no-files-found: error
+    timeout-minutes: 45
+  build-dsp:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install Toolchain
+      run: 'sudo apt-get update
+
+        sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
+
+        '
+    - name: Setup Pico SDK
+      run: 'git clone --depth 1 --branch 2.0.0 https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
+
+        cd ~/pico-sdk
+
+        git submodule update --init
+
+        '
+    - name: Build Firmware
+      working-directory: Firmware/DSP
+      run: 'mkdir build
+
+        cd build
+
+        cmake -DPICO_SDK_PATH="$HOME/pico-sdk" -DPICO_BOARD=pico2 ..
+
+        make
+
+        '
+    - uses: actions/upload-artifact@v7
+      with:
+        name: build-dsp
+        path: 'Firmware/DSP/build/isb_dsp.uf2
+
+          Firmware/DSP/build/isb_dsp.bin
+
+          '
+        if-no-files-found: error
+    timeout-minutes: 45
+  build-icc:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+    - name: Install Dependencies
+      run: 'python -m pip install --upgrade pip
+
+        pip install pyinstaller customtkinter requests esptool zeroconf pillow pyserial
+
+        '
+    - name: Build Executable
+      working-directory: Insane Control Center/Linux
+      run: pyinstaller -y --noconsole --onefile --name=InsaneControlCenter --icon=logo.ico --add-data="logo.png;." --add-data="logo.ico;." --hidden-import=serial.urlhandler.protocol_socket
+        --collect-data=esptool InsaneControlCenter.py
+    - name: Move EXE to Windows Folder
+      shell: bash
+      run: 'mkdir -p "Insane Control Center/Windows"
+
+        cp "Insane Control Center/Linux/dist/InsaneControlCenter.exe" "Insane Control Center/Windows/InsaneControlCenter.exe"
+
+        '
+    - uses: actions/upload-artifact@v7
+      with:
+        name: build-icc
+        path: Insane Control Center/Windows/InsaneControlCenter.exe
+        if-no-files-found: error
+    timeout-minutes: 45
+  build-sub-rx:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+    - name: Install PlatformIO
+      run: 'python -m pip install --upgrade pip
+
+        pip install --upgrade platformio
+
+        '
+    - name: Build Firmware
+      working-directory: Firmware/SUB_RX
+      run: pio run
+    - name: Rename Firmware
+      working-directory: Firmware/SUB_RX/.pio/build/esp32dev
+      run: mv firmware.bin sub_rx_firmware.bin
+    - uses: actions/upload-artifact@v7
+      with:
+        name: build-sub-rx
+        path: Firmware/SUB_RX/.pio/build/esp32dev/sub_rx_firmware.bin
+        if-no-files-found: error
+    timeout-minutes: 45
+  build-sub-tx:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Build with ESP-IDF
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.2.1
+        target: esp32
+        path: Firmware/SUB_TX
+    - name: Rename Firmware
+      working-directory: Firmware/SUB_TX/build
+      run: sudo mv sub_tx.bin sub_tx_firmware.bin
+    - uses: actions/upload-artifact@v7
+      with:
+        name: build-sub-tx
+        path: Firmware/SUB_TX/build/sub_tx_firmware.bin
+        if-no-files-found: error
+    timeout-minutes: 45
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+    - source
+    - esphome
+    - build-apk
+    - build-bluetooth
+    - build-dsp
+    - build-icc
+    - build-sub-rx
+    - build-sub-tx
+    - native-master
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/download-artifact@v8
+      with:
+        path: release-output
+        merge-multiple: true
+    - name: Hash complete downloads
+      working-directory: release-output
+      run: 'find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -printf ''%f\0'' | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+
+        sha256sum -c SHA256SUMS.txt'
+    - name: Publish complete release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        TAG: ${{ github.ref_name }}
+      run: gh release create "$TAG" release-output/* --verify-tag --title "${GITHUB_REPOSITORY#*/} $TAG" --notes-file RELEASE-NOTES.md
+  native-master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+    - run: python -m pip install platformio
+    - name: Compile native ESP-IDF master
+      run: pio run -d Firmware/Master -e esp32-s3-devkitc-1
+    - run: mkdir -p release-output && cp Firmware/Master/.pio/build/esp32-s3-devkitc-1/firmware.bin release-output/master_native_firmware.bin
+    - uses: actions/upload-artifact@v7
+      with:
+        name: native-master
+        path: release-output/master_native_firmware.bin
+        if-no-files-found: error

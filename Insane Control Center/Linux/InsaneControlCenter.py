@@ -52,7 +52,7 @@ ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 # Default URLs; dynamically resolved via GitHub API where possible.
-GITHUB_API_LATEST = "https://api.github.com/repos/babeinlovexd/Insane-Sound-System/releases/latest"
+GITHUB_API_LATEST = "https://api.github.com/repos/babeinlovexd/Insane-Soundbar/releases/latest"
 GITHUB_URL = "https://github.com/babeinlovexd/Insane-Soundbar"
 GITHUB_AUTHOR_URL = "https://github.com/babeinlovexd"
 UPDATE_CHECK_INTERVAL = 3600 # Sekunden
@@ -987,20 +987,16 @@ class InsaneControlCenter(ctk.CTk):
 
             self.after(0, lambda: status_lbl.configure(text="Schritt 0: Lade Firmware von GitHub...", text_color="orange"))
 
+            # Match only the binary intended for this chip, never a similarly named asset.
+            firmware_assets = {"btrx":"bluetooth_firmware.bin","subtx":"sub_tx_firmware.bin","rp2354":"isb_dsp.bin"}
+            asset_name = firmware_assets[target]
             download_url = None
-            if hasattr(self, 'github_assets') and self.github_assets:
-                for asset in self.github_assets:
-                    if target.lower() in asset['name'].lower():
-                        download_url = asset['browser_download_url']
-                        break
-
+            for asset in getattr(self, "github_assets", []):
+                if asset.get("name") == asset_name:
+                    download_url = asset["browser_download_url"]
+                    break
             if not download_url:
-                if target == "btrx":
-                    download_url = "https://raw.githubusercontent.com/babeinlovexd/Insane-Sound-System/main/Firmware/Bluetooth/firmware.bin"
-                elif target == "subtx":
-                    download_url = "https://raw.githubusercontent.com/babeinlovexd/Insane-Sound-System/main/Firmware/SUB_TX/firmware.bin"
-                else:
-                    download_url = "https://raw.githubusercontent.com/babeinlovexd/Insane-Sound-System/main/Firmware/DSP/firmware.bin"
+                download_url = f"{GITHUB_URL}/releases/latest/download/{asset_name}"
 
             r = requests.get(download_url, timeout=15)
             r.raise_for_status()

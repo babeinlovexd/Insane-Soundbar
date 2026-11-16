@@ -17,3 +17,6 @@ esptool-4.6.2/
 *~
 .DS_Store
 Thumbs.db
+
+# Local build verification and CI staging
+release-output/

@@ -1,11 +1,11 @@
 [project]
 name = "InsaneControlCenter"
 version = "0.1.0"
-description = ""
+description = "Android control app for the Insane Soundbar"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    { name = "Flet developer", email = "you@example.com" }
+    { name = "BabeinlovexD" }
 ]
 dependencies = [
     "flet>=0.85.1",

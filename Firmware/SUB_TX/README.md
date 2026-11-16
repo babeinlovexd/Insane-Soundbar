@@ -8,7 +8,7 @@ Dieses Modul ist die Firmware für den ESP32-WROOM-32UE-N4 auf dem Mainboard der
 * **Audio-Eingang:** I2S Slave RX (Taktgeber ist der RP2354 DSP)
 * **Audio-Ausgang:** ESP-NOW (zum SUB-RX Modul)
 * **Steuerung:** I2C Slave (0x22) vom ESP32-S3 Master + INT-Pin
-* **Audio-Spezifikationen:** 16.000 Hz (16 kHz), 16-Bit Mono (nur der linke Kanal wird gefunkt, um Bandbreite zu sparen)
+* **Audio-Spezifikationen:** 11.025 Hz, 16-Bit Mono (nur der linke Kanal wird übertragen; `SAMPLE_RATE` in `main/main.c`)
 
 ## I2C-Register (Adresse 0x22)
 
